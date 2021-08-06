@@ -1,0 +1,2 @@
+# notecheck
+Solfege exercises
