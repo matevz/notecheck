@@ -1,15 +1,20 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+import uuid
 
 class Clefs(models.TextChoices):
         TREBLE = 'treble', _('Treble')
         BASS = 'bass', _('Bass')
 
 class Exercise(models.Model):
-    token = models.CharField(max_length=32, primary_key=True)
-    created = models.DateTimeField('date published')
+    token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created = models.DateTimeField('date published', auto_now=True)
 
 class NotePitchExercise(Exercise):
+    AMBITUS = {
+        Clefs.TREBLE: (25, 45),
+        Clefs.BASS: (12, 33),
+    }
     clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
 
 class Submission(models.Model):
@@ -50,6 +55,11 @@ class DiatonicPitch:
 
         name += 'is'*self.accs
         name += 'es'*-self.accs
+        if name.startswith('ee'): # es
+            name = name[1:]
+        if name.startswith('aes'): # as
+            name = name.replace('es','as')
+            name = name[1:]
 
         if self.pitch < 7:
             name += '2'
@@ -87,3 +97,24 @@ class DiatonicPitch:
             pitch -= 7*int(name[-1])
 
         return DiatonicPitch(pitch,accs)
+
+    def to_lilypond(self) -> str:
+        name = chr(ord('c')+(self.pitch%7))
+
+        if name=='h':
+            name = 'a'
+        if name=='i':
+            name = 'b'
+
+        name += 'is'*self.accs
+        name += 'es'*-self.accs
+        if name.startswith('ee'): # es
+            name = name[1:]
+        if name.startswith('aes'): # as
+            name = name.replace('es','as')
+            name = name[1:]
+
+        name += "'"*((self.pitch-21)//7)
+        name += ","*-((self.pitch-21)//7)
+
+        return name

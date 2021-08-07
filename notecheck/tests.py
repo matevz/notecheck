@@ -5,6 +5,12 @@ from .models import DiatonicPitch
 class DiatonicPitchTests(TestCase):
     def test_pitch_to_name(self):
         self.assertEquals(DiatonicPitch(0,0).to_name(), 'C2')
+        self.assertEquals(DiatonicPitch(1,0).to_name(), 'D2')
+        self.assertEquals(DiatonicPitch(2,0).to_name(), 'E2')
+        self.assertEquals(DiatonicPitch(3,0).to_name(), 'F2')
+        self.assertEquals(DiatonicPitch(4,0).to_name(), 'G2')
+        self.assertEquals(DiatonicPitch(5,0).to_name(), 'A2')
+        self.assertEquals(DiatonicPitch(6,0).to_name(), 'B2')
         self.assertEquals(DiatonicPitch(9,1).to_name(), 'Eis1')
         self.assertEquals(DiatonicPitch(27,0).to_name(), 'b')
         self.assertEquals(DiatonicPitch(28,-1).to_name(), 'ces1')
@@ -25,3 +31,17 @@ class DiatonicPitchTests(TestCase):
         self.assertEquals(DiatonicPitch.from_name('h'), DiatonicPitch(27,0))
         self.assertEquals(DiatonicPitch.from_name('ces1'), DiatonicPitch(28,-1))
         self.assertEquals(DiatonicPitch.from_name('d2'), DiatonicPitch(36,0))
+
+    def test_pitch_to_lilypond(self):
+        self.assertEquals(DiatonicPitch(21,0).to_lilypond(), "c")
+        self.assertEquals(DiatonicPitch(0,0).to_lilypond(), 'c,,,')
+        self.assertEquals(DiatonicPitch(1,0).to_lilypond(), 'd,,,')
+        self.assertEquals(DiatonicPitch(2,0).to_lilypond(), 'e,,,')
+        self.assertEquals(DiatonicPitch(3,0).to_lilypond(), 'f,,,')
+        self.assertEquals(DiatonicPitch(4,0).to_lilypond(), 'g,,,')
+        self.assertEquals(DiatonicPitch(5,0).to_lilypond(), 'a,,,')
+        self.assertEquals(DiatonicPitch(6,0).to_lilypond(), 'b,,,')
+        self.assertEquals(DiatonicPitch(9,1).to_lilypond(), "eis,,")
+        self.assertEquals(DiatonicPitch(27,0).to_lilypond(), "b")
+        self.assertEquals(DiatonicPitch(28,-1).to_lilypond(), "ces'")
+        self.assertEquals(DiatonicPitch(36,0).to_lilypond(), "d''")
