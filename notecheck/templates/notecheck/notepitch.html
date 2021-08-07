@@ -1,0 +1,5 @@
+    <ul>
+    {% for n in notes %}
+        <li><a href="/polls/{{ n.img }}/">{{ n.field }}</a></li>
+    {% endfor %}
+    </ul>
