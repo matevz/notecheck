@@ -1,25 +1,55 @@
 import random
-from datetime import datetime
+import json
+import time
 
 from django.http import HttpResponse
+from django.template import loader
 
 from .models import *
+from .lilypond import *
 
 def index(request):
     return HttpResponse("missing token")
 
 def submission(request, token):
+    template = loader.get_template('notecheck/notepitch.html')
     ex = NotePitchExercise.objects.get(token=token)
 
-    ambitus = NotePitchExercise.AMBITUS[ex.clef]
+    context = {}
+    submission: Submission
 
-    seed = int(datetime.now())
-    rnd = random.Random(seed)
-    notes = []
-    for i in range(20):
-        notes.append( DiatonicPitch(rnd.randrange(ambitus[0],ambitus[0]), 0) )
+    if request.method == 'POST':
+        submission = Submission.objects.get(id=request.POST['submission_id'])
+    else:
+        submission = Submission(
+            token=ex,
+            seed=int(time.time()),
+            answers=['']*ex.num_questions,
+        )
+        submission.save()
 
-    for n in notes:
-        lilysrc = "{{ \\clef {clefname} {note}1 }}".format(clefname=ex.clef.lower(), note=n)
+    pitches = submission.get_pitches()
 
-    return HttpResponse("this is ex {}".format(ex.clef))
+    if request.method == 'POST':
+        answers = []
+        for i in range(len(pitches)):
+            answers.append(request.POST['pitch'+str(i)])
+
+        submission.answers = answers
+        submission.save()
+
+    svgs = []
+    for p in pitches:
+        lilysrc = "{{ \\clef {clefname} {pitch}1 }}".format(clefname=ex.clef.lower(), pitch=p.to_lilypond())
+        svgs.append(generate_svg(lilysrc))
+
+    questions = []
+    for i, s in enumerate(svgs):
+        questions.append( { "svg": s, "answer": submission.answers[i], "correct": pitches[i].to_name(lang='sl')==submission.answers[i] } )
+
+    context = {
+        'exercise': ex,
+        'submission': submission,
+        'questions': questions
+    }
+    return HttpResponse(template.render(context, request))

@@ -1,6 +1,9 @@
+from datetime import timedelta
+import uuid
+import random
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-import uuid
 
 class Clefs(models.TextChoices):
         TREBLE = 'treble', _('Treble')
@@ -9,6 +12,7 @@ class Clefs(models.TextChoices):
 class Exercise(models.Model):
     token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField('date published', auto_now=True)
+    num_questions = models.IntegerField(default=20)
 
 class NotePitchExercise(Exercise):
     AMBITUS = {
@@ -20,9 +24,22 @@ class NotePitchExercise(Exercise):
 class Submission(models.Model):
     token = models.ForeignKey(Exercise, on_delete=models.CASCADE)
     seed = models.IntegerField(default=0)
-    submission = models.JSONField()
-    created = models.DateTimeField('submission date')
-    duration = models.DurationField()
+    answers = models.JSONField(null=True)
+    created = models.DateTimeField('assignment created date', auto_now=True)
+    duration = models.DurationField(default=timedelta(0))
+
+    def get_pitches(self) -> []:
+        ex = NotePitchExercise.objects.get(token=self.token.token)
+        ambitus = NotePitchExercise.AMBITUS[ex.clef]
+
+        rnd = random.Random(self.seed)
+        notes = []
+        for i in range(ex.num_questions):
+            pitch = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
+            notes.append( pitch )
+
+        return notes
+
 
 class DiatonicPitch:
     pitch: int # 0 is sub-contra octave
@@ -38,7 +55,7 @@ class DiatonicPitch:
     def __eq__(self, other):
         return self.pitch == other.pitch and self.accs == other.accs
 
-    def to_name(self, lang: str = 'en'):
+    def to_name(self, lang: str = 'en') -> str:
         """converts pitch to note name. e.g. (0,0) -> C2, (9, 1) -> Eis1, (28, 0) -> c1"""
         name = chr(ord('C')+(self.pitch%7))
 

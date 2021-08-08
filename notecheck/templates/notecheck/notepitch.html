@@ -1,5 +1,25 @@
-    <ul>
-    {% for n in notes %}
-        <li><a href="/polls/{{ n.img }}/">{{ n.field }}</a></li>
-    {% endfor %}
-    </ul>
+<!DOCTYPE html>
+<html>
+    <body>
+        <form action="{% url 'submission' exercise.token %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" value="{{ submission.id }}" name="submission_id" />
+            <fieldset>
+                {% for q in questions %}
+                    <div class="question">
+                        <span class="note-image">{{ q.svg |safe }}</span>
+                        <input type="text" name="pitch{{ forloop.counter0 }}" value="{{ q.answer }}"></input>
+                        {% if q.answer %}
+                            {% if q.correct %}
+                            <span class="answer-correct">✔</span>
+                            {% else %}
+                            <span class="answer-wrong">✖</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </fieldset>
+            <input type="submit" value="Submit"/>
+        </form>
+    </body>
+</html>
