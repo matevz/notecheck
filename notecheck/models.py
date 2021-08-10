@@ -2,7 +2,10 @@ from datetime import timedelta
 import uuid
 import random
 
+from django.contrib import admin
 from django.db import models
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 class Clefs(models.TextChoices):
@@ -21,6 +24,14 @@ class NotePitchExercise(Exercise):
     }
     clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
 
+@admin.register(NotePitchExercise)
+class NotePitchExerciseAdmin(admin.ModelAdmin):
+    list_display = ('token', 'created', 'num_questions', 'link')
+
+    @admin.display(description='Link')
+    def link(self, obj):
+        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+
 class Submission(models.Model):
     token = models.ForeignKey(Exercise, on_delete=models.CASCADE)
     seed = models.IntegerField(default=0)
@@ -29,6 +40,7 @@ class Submission(models.Model):
     duration = models.DurationField(default=timedelta(0))
 
     def get_pitches(self) -> []:
+        """return pitch instances generated from the seed"""
         ex = NotePitchExercise.objects.get(token=self.token.token)
         ambitus = NotePitchExercise.AMBITUS[ex.clef]
 
@@ -40,6 +52,25 @@ class Submission(models.Model):
 
         return notes
 
+    def get_score(self, lang) -> int:
+        """return number of correct answers"""
+        pitches = self.get_pitches()
+        num_correct = 0
+        for i, s in enumerate(self.answers):
+            correct = pitches[i].to_name(lang=lang) == self.answers[i]
+            num_correct += int(correct)
+        return num_correct
+
+@admin.register(Submission)
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = ('token', 'created', 'duration', 'view_score')
+
+    @admin.display(description='Score')
+    def view_score(self, obj):
+        if obj.duration:
+            return "{} / {}".format(obj.get_score('sl'), obj.token.num_questions)
+        else:
+            return ""
 
 class DiatonicPitch:
     pitch: int # 0 is sub-contra octave

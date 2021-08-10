@@ -1,6 +1,5 @@
-import random
-import json
 import time
+from datetime import datetime, timezone
 
 from django.http import HttpResponse
 from django.template import loader
@@ -30,12 +29,13 @@ def submission(request, token):
 
     pitches = submission.get_pitches()
 
-    if request.method == 'POST':
+    if request.method == 'POST' and not submission.duration:
         answers = []
-        for i in range(len(pitches)):
+        for i in range(ex.num_questions):
             answers.append(request.POST['pitch'+str(i)])
 
         submission.answers = answers
+        submission.duration = datetime.now(timezone.utc)-submission.created
         submission.save()
 
     svgs = []
@@ -45,11 +45,14 @@ def submission(request, token):
 
     questions = []
     for i, s in enumerate(svgs):
-        questions.append( { "svg": s, "answer": submission.answers[i], "correct": pitches[i].to_name(lang='sl')==submission.answers[i] } )
+        correct = pitches[i].to_name(lang='sl')==submission.answers[i]
+        questions.append( { "svg": s, "answer": submission.answers[i], "correct": correct } )
 
     context = {
         'exercise': ex,
         'submission': submission,
-        'questions': questions
+        'questions': questions,
+        'num_correct': submission.get_score(lang='sl'),
+        'top_10': submission.get_score(lang='sl')/ex.num_questions >= 0.9,
     }
     return HttpResponse(template.render(context, request))

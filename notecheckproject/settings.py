@@ -16,7 +16,6 @@ from os import environ as env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
@@ -26,8 +25,7 @@ SECRET_KEY = env['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'DEBUG' in env
 
-ALLOWED_HOSTS = ['127.0.0.1','note.jekovec.net']
-
+ALLOWED_HOSTS = ['127.0.0.1','localhost','note.jekovec.net']
 
 # Application definition
 
@@ -105,7 +103,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'sl'
+LOCALE_PATHS = [
+    'locale'
+]
 
 TIME_ZONE = 'UTC'
 
