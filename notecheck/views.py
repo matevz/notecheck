@@ -32,7 +32,8 @@ def submission(request, token):
     if request.method == 'POST' and not submission.duration:
         answers = []
         for i in range(ex.num_questions):
-            answers.append(request.POST['pitch'+str(i)])
+            answer = request.POST['pitch'+str(i)].strip()
+            answers.append(answer)
 
         submission.answers = answers
         submission.duration = datetime.now(timezone.utc)-submission.created
