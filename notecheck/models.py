@@ -14,6 +14,7 @@ class Clefs(models.TextChoices):
 
 class Exercise(models.Model):
     token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=50)
     created = models.DateTimeField('date published', auto_now=True)
     num_questions = models.IntegerField(default=20)
 
@@ -26,7 +27,7 @@ class NotePitchExercise(Exercise):
 
 @admin.register(NotePitchExercise)
 class NotePitchExerciseAdmin(admin.ModelAdmin):
-    list_display = ('token', 'created', 'num_questions', 'link')
+    list_display = ('title', 'token', 'created', 'num_questions', 'link')
 
     @admin.display(description='Link')
     def link(self, obj):
@@ -62,8 +63,13 @@ class Submission(models.Model):
         return num_correct
 
 @admin.register(Submission)
+@admin.display(ordering='created')
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ('token', 'created', 'duration', 'view_score')
+    list_display = ('name', 'created', 'duration', 'view_score')
+
+    @admin.display(description='Name')
+    def name(self, obj):
+        return "{} ({})".format(obj.token.title, str(obj.token.token)[:8])
 
     @admin.display(description='Score')
     def view_score(self, obj):
