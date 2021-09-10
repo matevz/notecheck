@@ -37,7 +37,7 @@ class Submission(models.Model):
     token = models.ForeignKey(Exercise, on_delete=models.CASCADE)
     seed = models.IntegerField(default=0)
     answers = models.JSONField(null=True)
-    created = models.DateTimeField('assignment created date', auto_now=True)
+    created = models.DateTimeField('submission created date', auto_now=True)
     duration = models.DurationField(default=timedelta(0))
 
     def get_pitches(self) -> []:
@@ -66,13 +66,18 @@ class Submission(models.Model):
 @admin.display(ordering='created')
 class SubmissionAdmin(admin.ModelAdmin):
     list_display = ('name', 'created', 'duration', 'view_score')
+    list_filter = ['token']
 
-    @admin.display(description='Name')
-    def name(self, obj):
+    def get_queryset(self, request):
+        # Hide submissions which weren't submitted yet.
+        return super(SubmissionAdmin, self).get_queryset(request).filter(duration__gt=timedelta(0))
+
+    @admin.display(description='Exercise')
+    def name(self, obj) -> str:
         return "{} ({})".format(obj.token.title, str(obj.token.token)[:8])
 
     @admin.display(description='Score')
-    def view_score(self, obj):
+    def view_score(self, obj) -> str:
         if obj.duration:
             return "{} / {}".format(obj.get_score('sl'), obj.token.num_questions)
         else:
