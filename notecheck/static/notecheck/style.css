@@ -48,6 +48,10 @@ fieldset {
     font-size:16px;
 }
 
+.answer-wrong, .answer-correct {
+    cursor:default;
+}
+
 .answer-wrong {
     color:red;
 }

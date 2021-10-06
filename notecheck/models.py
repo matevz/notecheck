@@ -14,6 +14,7 @@ class Clefs(models.TextChoices):
 
 class Exercise(models.Model):
     token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    active = models.BooleanField(default=True)
     title = models.CharField(max_length=50)
     created = models.DateTimeField('date published', auto_now=True)
     num_questions = models.IntegerField(default=20)
@@ -24,6 +25,8 @@ class NotePitchExercise(Exercise):
         Clefs.BASS: (12, 33),
     }
     clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
+    max_sharps = models.PositiveSmallIntegerField(default=0)
+    max_flats = models.PositiveSmallIntegerField(default=0)
 
 @admin.register(NotePitchExercise)
 class NotePitchExerciseAdmin(admin.ModelAdmin):
@@ -47,9 +50,19 @@ class Submission(models.Model):
 
         rnd = random.Random(self.seed)
         notes = []
+        pitch: DiatonicPitch = None
+        oldPitch: DiatonicPitch = None
         for i in range(ex.num_questions):
-            pitch = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
+            # Avoid the same pitch one right after another.
+            while oldPitch == pitch:
+                accs = 0
+                if ex.max_sharps != 0 or ex.max_flats != 0:
+                    accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
+
+                pitch = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), accs)
+
             notes.append( pitch )
+            oldPitch = pitch
 
         return notes
 
@@ -95,6 +108,8 @@ class DiatonicPitch:
         return "({}, {})".format(self.pitch, self.accs)
 
     def __eq__(self, other):
+        if other == None:
+            return False
         return self.pitch == other.pitch and self.accs == other.accs
 
     def to_name(self, lang: str = 'en') -> str:

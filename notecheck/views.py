@@ -8,11 +8,17 @@ from .models import *
 from .lilypond import *
 
 def index(request):
-    return HttpResponse("missing token")
+    return HttpResponse("Missing exercise token.")
 
 def submission(request, token):
+    # TODO: First fetch the exercise and then the corresponding template.
     template = loader.get_template('notecheck/notepitch.html')
     ex = NotePitchExercise.objects.get(token=token)
+    if not ex:
+        return HttpResponse("Invalid exercise token.")
+
+    if not ex.active:
+        return HttpResponse("Exercise not activated.")
 
     context = {}
     submission: Submission
