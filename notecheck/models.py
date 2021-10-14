@@ -15,7 +15,7 @@ class Clefs(models.TextChoices):
 class Exercise(models.Model):
     token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     active = models.BooleanField(default=True)
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=100)
     created = models.DateTimeField('date published', auto_now=True)
     num_questions = models.IntegerField(default=20)
 
