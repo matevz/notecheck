@@ -81,7 +81,7 @@ class Submission(models.Model):
         pitches = self.get_pitches()
         num_correct = 0
         for i, s in enumerate(self.answers):
-            correct = pitches[i].to_name(lang=lang) == self.answers[i]
+            correct = pitches[i]==DiatonicPitch.from_name(self.answers[i], lang=lang)
             num_correct += int(correct)
         return num_correct
 
@@ -114,7 +114,7 @@ class DiatonicPitch:
         self.pitch = pitch
         self.accs = accs
 
-    def __str__(self, other):
+    def __repr__(self):
         return "({}, {})".format(self.pitch, self.accs)
 
     def __eq__(self, other):
@@ -159,7 +159,7 @@ class DiatonicPitch:
         pitch = ord(name.upper()[0])-ord('C')
         if pitch < 0: # A, B
             pitch += 7
-        if pitch == 5: # H
+        elif pitch == 5: # H
             pitch = 6
 
         accs = 0
@@ -169,8 +169,8 @@ class DiatonicPitch:
             accs = -name.count('s')
 
         if lang in ['sl', 'de']:
-            # In Slovenian (and German) language B means Hes, and BB means Heses
-            accs = -name.upper().count('B')
+            # In Slovenian (and German) language B also means Hes, and BB means Heses
+            accs -= name.upper().count('B')
 
         pitch += 14
         if name[0].islower():

@@ -52,7 +52,7 @@ def submission(request, token):
 
     questions = []
     for i, s in enumerate(svgs):
-        correct = pitches[i].to_name(lang='sl')==submission.answers[i]
+        correct = pitches[i]==DiatonicPitch.from_name(submission.answers[i], lang='sl')
         questions.append( { "svg": s, "answer": submission.answers[i], "correct": correct } )
 
     context = {
