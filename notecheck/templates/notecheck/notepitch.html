@@ -12,7 +12,13 @@
     </head>
     <body>
         {% if submission.duration %}
-        <div class="score">
+        <div class="score" title="{{ duration }}">
+            {% if besttime %}
+            <span class="besttime">
+                🏎
+            </span>
+            {% endif %}
+
             <span class="blink">
                 {% if num_correct == questions|length %}
                     🏆

@@ -16,13 +16,32 @@ fieldset {
 }
 
 .blink {
-  animation: blinker 1s step-start infinite;
+    animation: blinker 1s step-start infinite;
 }
 
 @keyframes blinker {
-  50% {
-    opacity: 0;
-  }
+    50% {
+        opacity: 0;
+    }
+}
+
+.besttime {
+    font-size: 42px;
+    top: -10px;
+    position: absolute;
+    animation-duration: 3s;
+    animation-name: slidein;
+    animation-iteration-count: infinite;
+}
+
+@keyframes slidein {
+    from {
+        right: 100%;
+    }
+
+    to {
+        right: 0%;
+    }
 }
 
 .question {

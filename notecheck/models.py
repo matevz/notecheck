@@ -43,6 +43,16 @@ class Submission(models.Model):
     created = models.DateTimeField('submission created date', auto_now=True)
     duration = models.DurationField(default=timedelta(0))
 
+    @staticmethod
+    def get_besttime(lang: str) -> timedelta:
+        """return the best time among the submissions with full score"""
+        besttime = timedelta.max
+        for s in Submission.objects.exclude(duration=timedelta(0)):
+            if s.get_score(lang=lang)==s.token.num_questions and s.duration < besttime:
+                besttime = s.duration
+
+        return besttime
+
     def get_pitches(self) -> []:
         """return pitch instances generated from the seed"""
         ex = NotePitchExercise.objects.get(token=self.token.token)
@@ -66,7 +76,7 @@ class Submission(models.Model):
 
         return notes
 
-    def get_score(self, lang) -> int:
+    def get_score(self, lang: str) -> int:
         """return number of correct answers"""
         pitches = self.get_pitches()
         num_correct = 0

@@ -61,5 +61,7 @@ def submission(request, token):
         'questions': questions,
         'num_correct': submission.get_score(lang='sl'),
         'top_10': submission.get_score(lang='sl')/ex.num_questions >= 0.9,
+        'besttime': submission.get_score(lang='sl')==ex.num_questions and Submission.get_besttime(lang='sl')>=submission.duration,
+        'duration': '{m}:{s}'.format(m=int(submission.duration.total_seconds()//60), s=int(submission.duration.total_seconds()%60))
     }
     return HttpResponse(template.render(context, request))
