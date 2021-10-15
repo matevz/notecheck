@@ -155,7 +155,10 @@ class DiatonicPitch:
         return name
 
     def from_name(name: str, lang: str = 'en'):
-        """converts note name to pitch"""
+        """converts note name to pitch. Returns None, if pitch is invalid"""
+        if not name:
+            return None
+
         pitch = ord(name.upper()[0])-ord('C')
         if pitch < 0: # A, B
             pitch += 7
