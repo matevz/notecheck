@@ -9,8 +9,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 class Clefs(models.TextChoices):
-        TREBLE = 'treble', _('Treble')
-        BASS = 'bass', _('Bass')
+    TREBLE = 'treble', _('Treble')
+    BASS = 'bass', _('Bass')
 
 class Exercise(models.Model):
     token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -118,7 +118,7 @@ class DiatonicPitch:
         return "({}, {})".format(self.pitch, self.accs)
 
     def __eq__(self, other):
-        if other == None:
+        if other is None:
             return False
         return self.pitch == other.pitch and self.accs == other.accs
 
@@ -205,3 +205,168 @@ class DiatonicPitch:
         name += ","*-((self.pitch-21)//7)
 
         return name
+
+class Interval:
+    quality: int # 0 perfect, 1 major, -1 minor, 2 augmented, -2 diminished
+    quantity: int # 1 prime, 2 second, 3 third etc. Can be negative, if direction is important
+
+    PERFECT = 0
+    MAJOR = 1
+    MINOR = -1
+    AUGMENTED = 2
+    DIMINISHED = -2
+
+    PRIME = 1
+    SECOND = 2
+    THIRD = 3
+    FOURTH = 4
+    FIFTH = 5
+    SIXTH = 6
+    SEVENTH = 7
+    OCTAVE = 8
+
+    def __init__(self, quality: int, quantity: int):
+        self.quality = quality
+        self.quantity = quantity
+
+    def __repr__(self):
+        return "({}, {})".format(self.quality, self.quantity)
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return self.quantity == other.quantity and self.quality == other.quality
+
+    @staticmethod
+    def from_diatonic_pitches(pitch1: DiatonicPitch, pitch2: DiatonicPitch, absolute: bool = True):
+        """
+        Construct an interval between given pitches.
+
+        :param pitch1: The first note pitch
+        :param pitch2: The second note pitch
+        :param absolute: If True, the order of note pitches will be ignored; If False, the quantity of the resulting
+        interval will be positive if the second pitch is higher than the first one, or negative if the second pitch is
+        lower than the first one (default True)
+        :return: Interval between the given pitches
+        """
+        interval = Interval(0, 0)
+        pLow: DiatonicPitch
+        pHigh: DiatonicPitch
+        if pitch1.pitch < pitch2.pitch or (pitch1.pitch == pitch2.pitch and pitch1.accs <= pitch2.accs):
+            pLow = pitch1
+            pHigh = pitch2
+        else:
+            pLow = pitch2
+            pHigh = pitch1
+
+        interval.quantity = pHigh.pitch - pLow.pitch + 1
+        relQnt = ((interval.quantity - 1) % 7) + 1
+        relPLow = (pLow.pitch % 7)
+        deltaQlt = 0
+        # TODO: Rewrite using match statement introduced in Python 3.10
+        if relQnt == Interval.PRIME:
+            deltaQlt = 0
+        elif relQnt == Interval.SECOND:
+            if relPLow == 2 or relPLow == 6:
+                deltaQlt = -1
+            else:
+                deltaQlt = 1
+        elif relQnt == Interval.THIRD:
+            if relPLow == 0 or relPLow == 3 or relPLow == 4:
+                deltaQlt = 1
+            else:
+                deltaQlt = -1
+        elif relQnt == Interval.FOURTH:
+            if relPLow == 3:
+                deltaQlt = 2
+            else:
+                deltaQlt = 0
+        elif relQnt == Interval.FIFTH:
+            if relPLow == 6:
+                deltaQlt = -2
+            else:
+                deltaQlt = 0
+        elif relQnt == Interval.SIXTH:
+            if relPLow == 2 or relPLow == 5 or relPLow == 6:
+                deltaQlt = -1
+            else:
+                deltaQlt = 1
+        elif relQnt == Interval.SEVENTH:
+            if relPLow == 0 or relPLow == 3:
+                deltaQlt = 1
+            else:
+                deltaQlt = -1
+
+        if relQnt == Interval.PRIME or relQnt == Interval.FOURTH or relQnt == Interval.FIFTH:
+            # prime, fourth, fifth are perfect, diminished or augmented
+            if (deltaQlt == 2 and pHigh.accs - pLow.accs == -1) or (deltaQlt == 0 and pHigh.accs - pLow.accs <= -1):
+                interval.quality = deltaQlt + pHigh.accs - pLow.accs - 1
+            elif deltaQlt == 2 and pHigh.accs - pLow.accs < -1:
+                interval.quality = deltaQlt + pHigh.accs - pLow.accs - 2
+            elif (deltaQlt == -2 and pHigh.accs - pLow.accs == 1) or (deltaQlt == 0 and pHigh.accs - pLow.accs >= 1):
+                interval.quality = deltaQlt + pHigh.accs - pLow.accs + 1
+            elif deltaQlt == -2 and pHigh.accs - pLow.accs > 1:
+                interval.quality = deltaQlt + pHigh.accs - pLow.accs + 2
+            else:
+                interval.quality = deltaQlt + pHigh.accs - pLow.accs
+        elif deltaQlt == Interval.MAJOR and pHigh.accs - pLow.accs < 0: # second, third, sixth and seventh cannot be perfect
+            interval.quality = deltaQlt + pHigh.accs - pLow.accs - 1
+        elif deltaQlt == Interval.MINOR and pHigh.accs - pLow.accs > 0:
+            interval.quality = deltaQlt + pHigh.accs - pLow.accs + 1
+        else:
+            interval.quality = deltaQlt + pHigh.accs - pLow.accs
+
+        if not absolute and (pitch1.pitch > pitch2.pitch or (pitch1.pitch == pitch2.pitch and pitch1.accs > pitch2.accs)):
+            interval.quantity *= -1
+
+        return interval
+
+    def semitones(self) -> int:
+        """
+        Return the number of semitones in the interval.
+
+        The return value is always positive.
+        This mapping is surjective.
+
+        :return: Number of semitones in the interval
+        """
+
+        semitones = 0
+        absQuantity = ((abs(self.quantity) - 1) % 7) + 1
+
+        # Major and perfect intervals are default
+        # TODO: Rewrite using match statement introduced in Python 3.10
+        if absQuantity == Interval.PRIME:
+            semitones = 0
+        elif absQuantity == Interval.SECOND:
+            semitones = 2
+        elif absQuantity == Interval.THIRD:
+            semitones = 4
+        elif absQuantity == Interval.FOURTH:
+            semitones = 5
+        elif absQuantity == Interval.FIFTH:
+            semitones = 7
+        elif absQuantity == Interval.SIXTH:
+            semitones = 9
+        elif absQuantity == Interval.SEVENTH:
+            semitones = 11
+
+        # Minor or diminished / augmented.
+        # TODO: Rewrite using match statement introduced in Python 3.10
+        if self.quality == Interval.DIMINISHED:
+            if absQuantity == 1 or absQuantity == 3 or absQuantity == 6 or absQuantity == 7:
+                semitones -= 2
+            else:
+                semitones -= 1
+        elif self.quality == Interval.MINOR:
+            semitones -= 1
+        elif self.quality == Interval.MAJOR:
+            semitones += 1
+
+        # Octaves.
+        semitones += 12 * ((abs(self.quantity) - 1) // 7)
+
+        # Invert semitones for negative quantity
+        semitones = abs(semitones)
+
+        return semitones

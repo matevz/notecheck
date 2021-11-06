@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from .models import DiatonicPitch
+from .models import DiatonicPitch, Interval
 
 class DiatonicPitchTests(TestCase):
     def test_pitch_to_name(self):
@@ -79,3 +79,46 @@ class DiatonicPitchTests(TestCase):
         self.assertEquals(DiatonicPitch(27,0).to_lilypond(), "b")
         self.assertEquals(DiatonicPitch(28,-1).to_lilypond(), "ces'")
         self.assertEquals(DiatonicPitch(36,0).to_lilypond(), "d''")
+
+class IntervalTests(TestCase):
+    def test_from_diatonic_pitches_absolute_no_accs(self):
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(1,0), True), Interval(Interval.MAJOR, Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(2,0), True), Interval(Interval.MAJOR, Interval.THIRD))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(3,0), True), Interval(Interval.PERFECT, Interval.FOURTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(4,0), True), Interval(Interval.PERFECT, Interval.FIFTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(5,0), True), Interval(Interval.MAJOR, Interval.SIXTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(6,0), True), Interval(Interval.MAJOR, Interval.SEVENTH))
+
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(1,0), DiatonicPitch(0,0), True), Interval(Interval.MAJOR, Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(2,0), DiatonicPitch(0,0), True), Interval(Interval.MAJOR, Interval.THIRD))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(3,0), DiatonicPitch(0,0), True), Interval(Interval.PERFECT, Interval.FOURTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(4,0), DiatonicPitch(0,0), True), Interval(Interval.PERFECT, Interval.FIFTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(5,0), DiatonicPitch(0,0), True), Interval(Interval.MAJOR, Interval.SIXTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(6,0), DiatonicPitch(0,0), True), Interval(Interval.MAJOR, Interval.SEVENTH))
+
+    def test_from_diatonic_pitches_no_accs(self):
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(1,0), False), Interval(Interval.MAJOR, Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(2,0), False), Interval(Interval.MAJOR, Interval.THIRD))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(3,0), False), Interval(Interval.PERFECT, Interval.FOURTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(4,0), False), Interval(Interval.PERFECT, Interval.FIFTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(5,0), False), Interval(Interval.MAJOR, Interval.SIXTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(0,0), DiatonicPitch(6,0), False), Interval(Interval.MAJOR, Interval.SEVENTH))
+
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(1,0), DiatonicPitch(0,0), False), Interval(Interval.MAJOR, -Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(2,0), DiatonicPitch(0,0), False), Interval(Interval.MAJOR, -Interval.THIRD))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(3,0), DiatonicPitch(0,0), False), Interval(Interval.PERFECT, -Interval.FOURTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(4,0), DiatonicPitch(0,0), False), Interval(Interval.PERFECT, -Interval.FIFTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(5,0), DiatonicPitch(0,0), False), Interval(Interval.MAJOR, -Interval.SIXTH))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(6,0), DiatonicPitch(0,0), False), Interval(Interval.MAJOR, -Interval.SEVENTH))
+
+    def test_from_diatonic_pitches(self):
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,0), DiatonicPitch(6,0), False), Interval(Interval.MINOR, -Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,0), DiatonicPitch(6,-1), False), Interval(Interval.MAJOR, -Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,1), DiatonicPitch(6,-1), False), Interval(Interval.AUGMENTED, -Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,-1), DiatonicPitch(6,0), False), Interval(Interval.DIMINISHED, -Interval.SECOND))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,1), DiatonicPitch(10,1), False), Interval(Interval.PERFECT, Interval.FOURTH))
+
+    def test_from_diatonic_pitches_over_octave(self):
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,0), DiatonicPitch(14,0), True), Interval(Interval.PERFECT, Interval.OCTAVE))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,0), DiatonicPitch(15,0), True), Interval(Interval.MAJOR, 9))
+        self.assertEquals(Interval.from_diatonic_pitches(DiatonicPitch(7,0), DiatonicPitch(16,0), True), Interval(Interval.MAJOR, 10))
