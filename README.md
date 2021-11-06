@@ -1,5 +1,7 @@
 # NoteCheck
 
+![unit_tests_workflow](https://github.com/matevz/notecheck/actions/workflows/unit_tests.yml/badge.svg)
+
 A simple django app for [solfege](https://en.wikipedia.org/wiki/Solf%C3%A8ge) exercises.
 
 Currently supported exercises:
