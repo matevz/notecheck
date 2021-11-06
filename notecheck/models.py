@@ -3,6 +3,7 @@ import uuid
 import random
 
 from django.contrib import admin
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -43,16 +44,41 @@ class Submission(models.Model):
     created = models.DateTimeField('submission created date', auto_now=True)
     duration = models.DurationField(default=timedelta(0))
 
-    @staticmethod
-    def get_besttime(lang: str) -> timedelta:
+    def get_score(self, lang: str) -> int:
+        """return number of correct answers"""
+        raise NotImplementedError()
+
+    def get_besttime(self, lang: str) -> timedelta:
         """return the best time among the submissions with full score"""
-        besttime = timedelta.max
-        for s in Submission.objects.exclude(duration=timedelta(0)):
-            if s.get_score(lang=lang)==s.token.num_questions and s.duration < besttime:
-                besttime = s.duration
+        best_time = timedelta.max
+        for s in Submission.objects(token=self.token).exclude(duration=timedelta(0)):
+            if s.get_score(lang=lang)==s.token.num_questions and s.duration < best_time:
+                best_time = s.duration
 
-        return besttime
+        return best_time
 
+@admin.register(Submission)
+@admin.display(ordering='created')
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created', 'duration', 'view_score')
+    list_filter = ['token']
+
+    def get_queryset(self, request):
+        # Hide submissions which weren't submitted yet.
+        return super(SubmissionAdmin, self).get_queryset(request).filter(duration__gt=timedelta(0))
+
+    @admin.display(description='Exercise')
+    def name(self, obj) -> str:
+        return "{} ({})".format(obj.token.title, str(obj.token.token)[:8])
+
+    @admin.display(description='Score')
+    def view_score(self, obj) -> str:
+        if obj.duration:
+            return "{} / {}".format(obj.get_score('sl'), obj.token.num_questions)
+        else:
+            return ""
+
+class NotePitchSubmission(Submission):
     def get_pitches(self) -> []:
         """return pitch instances generated from the seed"""
         ex = NotePitchExercise.objects.get(token=self.token.token)
@@ -77,7 +103,6 @@ class Submission(models.Model):
         return notes
 
     def get_score(self, lang: str) -> int:
-        """return number of correct answers"""
         pitches = self.get_pitches()
         num_correct = 0
         for i, s in enumerate(self.answers):
@@ -85,26 +110,80 @@ class Submission(models.Model):
             num_correct += int(correct)
         return num_correct
 
-@admin.register(Submission)
-@admin.display(ordering='created')
-class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created', 'duration', 'view_score')
-    list_filter = ['token']
+class IntervalAnswerTypes(models.TextChoices):
+    INTERVAL_QUANTITY = 'interval_quantity', _('Interval quantity (e.g. 4)')
+    INTERVAL_QUANTITY_QUALITY = 'interval_quantity_quality', _('Interval quantity and quality (e.g. p4)')
+    FULLTONES = 'fulltones', _('Fulltones and remaining semitone (e.g. 2.5)')
+    SEMITONES = 'semitones', _('Semitones (e.g. 5)')
 
-    def get_queryset(self, request):
-        # Hide submissions which weren't submitted yet.
-        return super(SubmissionAdmin, self).get_queryset(request).filter(duration__gt=timedelta(0))
+class IntervalExercise(Exercise):
+    AMBITUS = {
+        Clefs.TREBLE: (25, 45),
+        Clefs.BASS: (12, 33),
+    }
+    clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
+    answer_type = models.CharField(max_length=50, choices=IntervalAnswerTypes.choices, default=IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY)
+    direction = models.SmallIntegerField(default=0, validators=[MaxValueValidator(1), MinValueValidator(-1)])
+    max_quantity = models.PositiveSmallIntegerField(default=8)
+    max_sharps = models.PositiveSmallIntegerField(default=0)
+    max_flats = models.PositiveSmallIntegerField(default=0)
 
-    @admin.display(description='Exercise')
-    def name(self, obj) -> str:
-        return "{} ({})".format(obj.token.title, str(obj.token.token)[:8])
+@admin.register(IntervalExercise)
+class IntervalExerciseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'token', 'created', 'num_questions', 'link')
 
-    @admin.display(description='Score')
-    def view_score(self, obj) -> str:
-        if obj.duration:
-            return "{} / {}".format(obj.get_score('sl'), obj.token.num_questions)
-        else:
-            return ""
+    @admin.display(description='Link')
+    def link(self, obj):
+        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+
+class IntervalSubmission(Submission):
+    def get_pitch_pairs(self) -> []:
+        """return pitch pairs generated from the seed"""
+        ex = self.token
+        rnd = random.Random(self.seed)
+        ambitus = IntervalExercise.AMBITUS[ex.clef]
+
+        pitch_pairs = []
+        pitch_pair: (DiatonicPitch, DiatonicPitch)
+        old_pitch_pair: (DiatonicPitch, DiatonicPitch)
+        for i in range(ex.num_questions):
+            # Avoid the same note pairs one after another.
+            while old_pitch_pair == pitch_pair:
+                pitch1 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]))
+                pitch2 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]))
+
+                if ex.max_sharps != 0 or ex.max_flats != 0:
+                    pitch1.accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
+                    pitch2.accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
+
+                # Check other exercise constrains.
+                interval_candidate = Interval.from_diatonic_pitches(pitch1, pitch2, False)
+                if (ex.max_quantity == 0 or interval_candidate.quantity <= ex.max_quantity) and (ex.direction == 0 or interval_candidate.quantity / abs(interval_candidate.quantity) == ex.direction):
+                    pitch_pair = (pitch1, pitch2)
+
+            pitch_pairs.append( pitch_pair )
+            old_pitch_pair = pitch_pair
+
+        return pitch_pairs
+
+    def get_score(self, lang: str) -> int:
+        pitch_pairs = self.get_pitch_pairs()
+        num_correct = 0
+        answer_type = self.tokenIntervalExercise.objects.get(token=self.token.token).answer_type
+        for i, s in enumerate(self.answers):
+            correct: bool
+            if answer_type == IntervalAnswerTypes.FULLTONES:
+                correct = Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() / 2 == float(self.answers[i].replace(',','.'))
+            elif answer_type == IntervalAnswerTypes.SEMITONES:
+                correct = Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() == int(self.answers[i])
+            elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY:
+                raise NotImplementedError()
+            elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY:
+                correct = Interval.from_diatonic_pitches(pitch_pairs[i], True).quantity == int(self.answers[i])
+            else:
+                raise NotImplementedError()
+            num_correct += int(correct)
+        return num_correct
 
 class DiatonicPitch:
     pitch: int # 0 is sub-contra octave
@@ -238,7 +317,7 @@ class Interval:
         return self.quantity == other.quantity and self.quality == other.quality
 
     @staticmethod
-    def from_diatonic_pitches(pitch1: DiatonicPitch, pitch2: DiatonicPitch, absolute: bool = True):
+    def from_diatonic_pitches( pitch_pair: (DiatonicPitch, DiatonicPitch), absolute: bool = True):
         """
         Construct an interval between given pitches.
 
@@ -249,6 +328,8 @@ class Interval:
         lower than the first one (default True)
         :return: Interval between the given pitches
         """
+        pitch1 = pitch_pair[0]
+        pitch2 = pitch_pair[1]
         interval = Interval(0, 0)
         pLow: DiatonicPitch
         pHigh: DiatonicPitch
