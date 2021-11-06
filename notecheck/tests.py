@@ -140,3 +140,57 @@ class IntervalTests(TestCase):
         self.assertEquals(Interval(Interval.MAJOR, Interval.SEVENTH).semitones(), 11)
 
         self.assertEquals(Interval.from_diatonic_pitches((DiatonicPitch(5, 1), DiatonicPitch(5,-1)), True).semitones(), 2)
+
+    def test_to_name(self):
+        self.assertEquals(Interval(Interval.PERFECT, Interval.PRIME).to_name(lang='en'), 'p1')
+        self.assertEquals(Interval(Interval.MAJOR, Interval.SECOND).to_name(lang='en'), 'maj2')
+        self.assertEquals(Interval(Interval.MINOR, Interval.THIRD).to_name(lang='en'), 'min3')
+        self.assertEquals(Interval(Interval.AUGMENTED, Interval.FOURTH).to_name(lang='en'), 'aug4')
+        self.assertEquals(Interval(Interval.AUGMENTED+1, Interval.FOURTH).to_name(lang='en'), 'augaug4')
+        self.assertEquals(Interval(Interval.DIMINISHED, Interval.FIFTH).to_name(lang='en'), 'dim5')
+        self.assertEquals(Interval(Interval.DIMINISHED-1, Interval.FIFTH).to_name(lang='en'), 'dimdim5')
+
+        self.assertEquals(Interval(Interval.PERFECT, Interval.PRIME).to_name(lang='sl'), 'č1')
+        self.assertEquals(Interval(Interval.MAJOR, Interval.SECOND).to_name(lang='sl'), 'v2')
+        self.assertEquals(Interval(Interval.MINOR, Interval.THIRD).to_name(lang='sl'), 'm3')
+        self.assertEquals(Interval(Interval.AUGMENTED, Interval.FOURTH).to_name(lang='sl'), 'zv4')
+        self.assertEquals(Interval(Interval.AUGMENTED+1, Interval.FOURTH).to_name(lang='sl'), 'zvzv4')
+        self.assertEquals(Interval(Interval.DIMINISHED, Interval.FIFTH).to_name(lang='sl'), 'zm5')
+        self.assertEquals(Interval(Interval.DIMINISHED-1, Interval.FIFTH).to_name(lang='sl'), 'zmzm5')
+
+        # Negative direction.
+        self.assertEquals(Interval(Interval.DIMINISHED, -Interval.FIFTH).to_name(lang='en'), '-dim5')
+        self.assertEquals(Interval(Interval.DIMINISHED-1, -Interval.FIFTH).to_name(lang='en'), '-dimdim5')
+        self.assertEquals(Interval(Interval.AUGMENTED, -Interval.FIFTH).to_name(lang='en'), '-aug5')
+        self.assertEquals(Interval(Interval.AUGMENTED+1, -Interval.FIFTH).to_name(lang='en'), '-augaug5')
+        self.assertEquals(Interval(Interval.DIMINISHED, -Interval.FIFTH).to_name(lang='sl'), '-zm5')
+        self.assertEquals(Interval(Interval.DIMINISHED-1, -Interval.FIFTH).to_name(lang='sl'), '-zmzm5')
+        self.assertEquals(Interval(Interval.AUGMENTED, -Interval.FIFTH).to_name(lang='sl'), '-zv5')
+        self.assertEquals(Interval(Interval.AUGMENTED+1, -Interval.FIFTH).to_name(lang='sl'), '-zvzv5')
+
+    def test_from_name(self):
+        self.assertEquals(Interval.from_name('p1', lang='en'), Interval(Interval.PERFECT, Interval.PRIME))
+        self.assertEquals(Interval.from_name('maj2', lang='en'), Interval(Interval.MAJOR, Interval.SECOND))
+        self.assertEquals(Interval.from_name('min3', lang='en'), Interval(Interval.MINOR, Interval.THIRD))
+        self.assertEquals(Interval.from_name('aug4', lang='en'), Interval(Interval.AUGMENTED, Interval.FOURTH))
+        self.assertEquals(Interval.from_name('augaug4', lang='en'), Interval(Interval.AUGMENTED+1, Interval.FOURTH))
+        self.assertEquals(Interval.from_name('dim5', lang='en'), Interval(Interval.DIMINISHED, Interval.FIFTH))
+        self.assertEquals(Interval.from_name('dimdim5', lang='en'), Interval(Interval.DIMINISHED-1, Interval.FIFTH))
+
+        self.assertEquals(Interval.from_name('č1', lang='sl'), Interval(Interval.PERFECT, Interval.PRIME))
+        self.assertEquals(Interval.from_name('v2', lang='sl'), Interval(Interval.MAJOR, Interval.SECOND))
+        self.assertEquals(Interval.from_name('m3', lang='sl'), Interval(Interval.MINOR, Interval.THIRD))
+        self.assertEquals(Interval.from_name('zv4', lang='sl'), Interval(Interval.AUGMENTED, Interval.FOURTH))
+        self.assertEquals(Interval.from_name('zvzv4', lang='sl'), Interval(Interval.AUGMENTED+1, Interval.FOURTH))
+        self.assertEquals(Interval.from_name('zm5', lang='sl'), Interval(Interval.DIMINISHED, Interval.FIFTH))
+        self.assertEquals(Interval.from_name('zmzm5', lang='sl'), Interval(Interval.DIMINISHED-1, Interval.FIFTH))
+
+        # Negative direction.
+        self.assertEquals(Interval.from_name('-aug4', lang='en'), Interval(Interval.AUGMENTED, -Interval.FOURTH))
+        self.assertEquals(Interval.from_name('-augaug4', lang='en'), Interval(Interval.AUGMENTED+1, -Interval.FOURTH))
+        self.assertEquals(Interval.from_name('-dim5', lang='en'), Interval(Interval.DIMINISHED, -Interval.FIFTH))
+        self.assertEquals(Interval.from_name('-dimdim5', lang='en'), Interval(Interval.DIMINISHED-1, -Interval.FIFTH))
+        self.assertEquals(Interval.from_name('-zv4', lang='sl'), Interval(Interval.AUGMENTED, -Interval.FOURTH))
+        self.assertEquals(Interval.from_name('-zvzv4', lang='sl'), Interval(Interval.AUGMENTED+1, -Interval.FOURTH))
+        self.assertEquals(Interval.from_name('-zm5', lang='sl'), Interval(Interval.DIMINISHED, -Interval.FIFTH))
+        self.assertEquals(Interval.from_name('-zmzm5', lang='sl'), Interval(Interval.DIMINISHED-1, -Interval.FIFTH))

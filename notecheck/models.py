@@ -1,6 +1,7 @@
 from datetime import timedelta
-import uuid
 import random
+import re
+import uuid
 
 from django.contrib import admin
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -47,7 +48,7 @@ class NotePitchExerciseAdmin(admin.ModelAdmin):
 
 class IntervalAnswerTypes(models.TextChoices):
     INTERVAL_QUANTITY = 'interval_quantity', _('Interval quantity (e.g. 4)')
-    INTERVAL_QUANTITY_QUALITY = 'interval_quantity_quality', _('Interval quantity and quality (e.g. p4)')
+    INTERVAL_QUANTITY_QUALITY = 'interval_quantity_quality', _('Interval quality and quantity (e.g. p4)')
     FULLTONES = 'fulltones', _('Fulltones and remaining semitone (e.g. 2.5)')
     SEMITONES = 'semitones', _('Semitones (e.g. 5)')
 
@@ -202,7 +203,7 @@ class IntervalSubmission(Submission):
 
         return pitch_pairs
 
-    def get_expected_answers(self, _: str) -> []:
+    def get_expected_answers(self, lang: str) -> []:
         answer_type = self.token.get_instance().answer_type
         expected_answers = []
         for i, p in enumerate(self.get_pitch_pairs()):
@@ -211,7 +212,7 @@ class IntervalSubmission(Submission):
             elif answer_type == IntervalAnswerTypes.SEMITONES:
                 expected_answers.append(str(Interval.from_diatonic_pitches(p, True).semitones()))
             elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY:
-                raise NotImplementedError()
+                expected_answers.append(str(Interval.from_diatonic_pitches(p, True).to_name(lang=lang)))
             elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY:
                 expected_answers.append(str(Interval.from_diatonic_pitches(p, True).quantity))
             else:
@@ -228,7 +229,7 @@ class IntervalSubmission(Submission):
             elif answer_type == IntervalAnswerTypes.SEMITONES:
                 correct_vec.append(len(a) and Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() == float(a))
             elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY:
-                raise NotImplementedError()
+                correct_vec.append(Interval.from_diatonic_pitches(pitch_pairs[i], True) == Interval.from_name(a, lang=lang))
             elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY:
                 correct_vec.append(len(a) and Interval.from_diatonic_pitches(pitch_pairs[i], True).quantity == int(a))
             else:
@@ -499,3 +500,72 @@ class Interval:
 
         # Always return positive value.
         return abs(semitones)
+
+    def to_name(self, lang: str = 'en') -> str:
+        """converts interval to human readable. e.g. (2, 4) -> aug4, (0, 5) -> p5, (1, 2) -> maj2, (-1, 2) -> min2, (-1, -2) -> -min2"""
+        quality_name: str
+        if lang=='sl':
+            if self.quality == Interval.PERFECT:
+                quality_name = 'č'
+            elif self.quality == Interval.MAJOR:
+                quality_name = 'v'
+            elif self.quality == Interval.MINOR:
+                quality_name = 'm'
+            elif self.quality >= Interval.AUGMENTED:
+                quality_name = 'zv'*(self.quality-1)
+            elif self.quality <= Interval.DIMINISHED:
+                quality_name = 'zm'*(abs(self.quality)-1)
+        else:
+            if self.quality == Interval.PERFECT:
+                quality_name = 'p'
+            elif self.quality == Interval.MAJOR:
+                quality_name = 'maj'
+            elif self.quality == Interval.MINOR:
+                quality_name = 'min'
+            elif self.quality >= Interval.AUGMENTED:
+                quality_name = 'aug'*(self.quality-1)
+            elif self.quality <= Interval.DIMINISHED:
+                quality_name = 'dim'*(abs(self.quality)-1)
+
+        name = ''
+        if self.quantity < 0:
+            name += '-'
+        name += quality_name
+        name += str(abs(self.quantity))
+
+        return name
+
+    def from_name(name: str, lang: str):
+        """converts human-readable interval to interval. Returns None, if interval is invalid"""
+        if not name:
+            return None
+
+        negative = False
+        if name[0] == '-':
+            negative = True
+            name = name[1:]
+
+        quality: int
+        if name.startswith('p') or name.startswith('č'):
+            quality = 0
+        elif name.startswith('maj') or name.startswith('v'):
+            quality = 1
+        elif name.startswith('min') or name.startswith('m'):
+            quality = -1
+        elif name.startswith('aug') or name.startswith('zv'):
+            quality = 1 + name.count('aug') + name.count('zv')
+        elif name.startswith('dim') or name.startswith('zm'):
+            quality = -1 - name.count('dim') - name.count('zm')
+        else:
+            return None
+
+        name_parts = re.split(r'(\d+)', name)
+        if len(name_parts)<2:
+            return None
+
+        quantity = int(name_parts[1])
+
+        if negative:
+            quantity *= -1
+
+        return Interval(quality, quantity)
