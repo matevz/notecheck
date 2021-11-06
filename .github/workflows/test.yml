@@ -1,6 +1,6 @@
 name: NoteCheck tests
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
@@ -17,6 +17,6 @@ jobs:
       run: |
         pip3 install -r requirements.txt
     - name: Run migrations
-      run: ./manage.py migrate
+      run: SECRET_KEY=unittests ./manage.py migrate
     - name: Run tests
-      run: ./manage.py test
+      run: SECRET_KEY=unittests ./manage.py test
