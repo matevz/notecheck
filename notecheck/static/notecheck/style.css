@@ -59,7 +59,7 @@ fieldset {
 .question input {
     display:block;
     width:50px;
-    margin-left:100px;
+    margin-left:85px;
 }
 
 .answer-wrong, .answer-correct {

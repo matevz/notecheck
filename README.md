@@ -3,9 +3,12 @@
 A simple django app for [solfege](https://en.wikipedia.org/wiki/Solf%C3%A8ge) exercises.
 
 Currently supported exercises:
-- name note pitch (treble or bass clef, optional sharps and/or flats) in Slovenian/German language
+- name note pitch (treble or bass clef, optional sharps and/or flats) in English/Slovenian/German language
+- name interval between the notes (quantity, quality+quantity, number of fulltones and/or semitones) in English/Slovenian language
 
 ![screenshot](./screenshot.png)
+![screenshot2](./screenshot2.png)
+![screenshot3](./screenshot3.png)
 
 ## Installation and Quickstart
 
