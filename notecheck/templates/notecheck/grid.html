@@ -45,7 +45,7 @@
                 {% for q in questions %}
                     <div class="question">
                         <span class="note-image">{{ q.svg |safe }}</span>
-                        <input type="text" name="pitch{{ forloop.counter0 }}" value="{{ q.answer }}"
+                        <input type="text" name="answer{{ forloop.counter0 }}" value="{{ q.answer }}"
                                {% if submission.duration %}disabled{% endif %} />
                         {% if q.answer %}
                             {% if q.correct %}

@@ -20,17 +20,51 @@ class Exercise(models.Model):
     created = models.DateTimeField('date published', auto_now=True)
     num_questions = models.IntegerField(default=20)
 
+    def get_instance(self):
+        """hack which returns a concrete implementation of exercise"""
+        for e_class in [NotePitchExercise, IntervalExercise]:
+            if e_class.objects.filter(token=self.token):
+                return e_class.objects.get(token=self.token)
+
+        raise TypeError()
+
 class NotePitchExercise(Exercise):
     AMBITUS = {
         Clefs.TREBLE: (25, 45),
         Clefs.BASS: (12, 33),
     }
     clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
-    max_sharps = models.PositiveSmallIntegerField(default=0)
-    max_flats = models.PositiveSmallIntegerField(default=0)
+    max_sharps = models.PositiveSmallIntegerField(default=1)
+    max_flats = models.PositiveSmallIntegerField(default=1)
 
 @admin.register(NotePitchExercise)
 class NotePitchExerciseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'token', 'created', 'num_questions', 'link')
+
+    @admin.display(description='Link')
+    def link(self, obj):
+        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+
+class IntervalAnswerTypes(models.TextChoices):
+    INTERVAL_QUANTITY = 'interval_quantity', _('Interval quantity (e.g. 4)')
+    INTERVAL_QUANTITY_QUALITY = 'interval_quantity_quality', _('Interval quantity and quality (e.g. p4)')
+    FULLTONES = 'fulltones', _('Fulltones and remaining semitone (e.g. 2.5)')
+    SEMITONES = 'semitones', _('Semitones (e.g. 5)')
+
+class IntervalExercise(Exercise):
+    AMBITUS = {
+        Clefs.TREBLE: (25, 45),
+        Clefs.BASS: (12, 33),
+    }
+    clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
+    answer_type = models.CharField(max_length=50, choices=IntervalAnswerTypes.choices, default=IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY)
+    direction = models.SmallIntegerField(default=0, validators=[MaxValueValidator(1), MinValueValidator(-1)])
+    max_quantity = models.PositiveSmallIntegerField(default=8)
+    max_sharps = models.PositiveSmallIntegerField(default=1)
+    max_flats = models.PositiveSmallIntegerField(default=1)
+
+@admin.register(IntervalExercise)
+class IntervalExerciseAdmin(admin.ModelAdmin):
     list_display = ('title', 'token', 'created', 'num_questions', 'link')
 
     @admin.display(description='Link')
@@ -44,8 +78,24 @@ class Submission(models.Model):
     created = models.DateTimeField('submission created date', auto_now=True)
     duration = models.DurationField(default=timedelta(0))
 
+    def get_instance(self):
+        """hack which returns a concrete implementation of submission"""
+        if NotePitchExercise.objects.filter(token=self.token.token):
+            return NotePitchSubmission.objects.get(pk=self.pk)
+        elif IntervalExercise.objects.filter(token=self.token.token):
+            return IntervalSubmission.objects.get(pk=self.pk)
+        raise TypeError()
+
+    def get_expected_answers(self, lang: str) -> []:
+        """return expected answers used as a helper in admin pages"""
+        raise NotImplementedError()
+
     def get_score(self, lang: str) -> int:
         """return number of correct answers"""
+        return self.get_instance().get_score_vector(lang).count(1)
+
+    def get_score_vector(self, lang: str) -> []:
+        """return binary array of correct/incorrect answers"""
         raise NotImplementedError()
 
     def get_besttime(self, lang: str) -> timedelta:
@@ -74,11 +124,14 @@ class SubmissionAdmin(admin.ModelAdmin):
     @admin.display(description='Score')
     def view_score(self, obj) -> str:
         if obj.duration:
-            return "{} / {}".format(obj.get_score('sl'), obj.token.num_questions)
+            return "{} / {}".format(obj.get_instance().get_score('sl'), obj.token.num_questions)
         else:
             return ""
 
 class NotePitchSubmission(Submission):
+    class Meta:
+        proxy = True
+
     def get_pitches(self) -> []:
         """return pitch instances generated from the seed"""
         ex = NotePitchExercise.objects.get(token=self.token.token)
@@ -102,63 +155,46 @@ class NotePitchSubmission(Submission):
 
         return notes
 
-    def get_score(self, lang: str) -> int:
+    def get_expected_answers(self, lang: str) -> []:
+        pitches_str = []
+        for i, p in enumerate(self.get_pitches()):
+            pitches_str.append(p.to_name(lang))
+        return pitches_str
+
+    def get_score_vector(self, lang: str) -> []:
         pitches = self.get_pitches()
-        num_correct = 0
+        correct_vec = []
         for i, s in enumerate(self.answers):
-            correct = pitches[i]==DiatonicPitch.from_name(self.answers[i], lang=lang)
-            num_correct += int(correct)
-        return num_correct
-
-class IntervalAnswerTypes(models.TextChoices):
-    INTERVAL_QUANTITY = 'interval_quantity', _('Interval quantity (e.g. 4)')
-    INTERVAL_QUANTITY_QUALITY = 'interval_quantity_quality', _('Interval quantity and quality (e.g. p4)')
-    FULLTONES = 'fulltones', _('Fulltones and remaining semitone (e.g. 2.5)')
-    SEMITONES = 'semitones', _('Semitones (e.g. 5)')
-
-class IntervalExercise(Exercise):
-    AMBITUS = {
-        Clefs.TREBLE: (25, 45),
-        Clefs.BASS: (12, 33),
-    }
-    clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
-    answer_type = models.CharField(max_length=50, choices=IntervalAnswerTypes.choices, default=IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY)
-    direction = models.SmallIntegerField(default=0, validators=[MaxValueValidator(1), MinValueValidator(-1)])
-    max_quantity = models.PositiveSmallIntegerField(default=8)
-    max_sharps = models.PositiveSmallIntegerField(default=0)
-    max_flats = models.PositiveSmallIntegerField(default=0)
-
-@admin.register(IntervalExercise)
-class IntervalExerciseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'token', 'created', 'num_questions', 'link')
-
-    @admin.display(description='Link')
-    def link(self, obj):
-        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+            correct = (i < len(pitches) and pitches[i]==DiatonicPitch.from_name(s, lang=lang))
+            correct_vec.append(correct)
+        return correct_vec
 
 class IntervalSubmission(Submission):
+    class Meta:
+        proxy = True
+
     def get_pitch_pairs(self) -> []:
         """return pitch pairs generated from the seed"""
-        ex = self.token
+        ex = self.token.get_instance()
         rnd = random.Random(self.seed)
         ambitus = IntervalExercise.AMBITUS[ex.clef]
 
         pitch_pairs = []
-        pitch_pair: (DiatonicPitch, DiatonicPitch)
-        old_pitch_pair: (DiatonicPitch, DiatonicPitch)
+        pitch_pair: (DiatonicPitch, DiatonicPitch) = None
+        old_pitch_pair: (DiatonicPitch, DiatonicPitch) = None
         for i in range(ex.num_questions):
             # Avoid the same note pairs one after another.
             while old_pitch_pair == pitch_pair:
-                pitch1 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]))
-                pitch2 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]))
+                pitch1 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
+                pitch2 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
 
                 if ex.max_sharps != 0 or ex.max_flats != 0:
                     pitch1.accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
                     pitch2.accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
 
                 # Check other exercise constrains.
-                interval_candidate = Interval.from_diatonic_pitches(pitch1, pitch2, False)
-                if (ex.max_quantity == 0 or interval_candidate.quantity <= ex.max_quantity) and (ex.direction == 0 or interval_candidate.quantity / abs(interval_candidate.quantity) == ex.direction):
+                interval_candidate = Interval.from_diatonic_pitches((pitch1, pitch2), False)
+                if (ex.max_quantity == 0 or abs(interval_candidate.quantity) <= ex.max_quantity) and (ex.direction == 0 or interval_candidate.quantity / abs(interval_candidate.quantity) == ex.direction):
                     pitch_pair = (pitch1, pitch2)
 
             pitch_pairs.append( pitch_pair )
@@ -166,24 +202,38 @@ class IntervalSubmission(Submission):
 
         return pitch_pairs
 
-    def get_score(self, lang: str) -> int:
-        pitch_pairs = self.get_pitch_pairs()
-        num_correct = 0
-        answer_type = self.tokenIntervalExercise.objects.get(token=self.token.token).answer_type
-        for i, s in enumerate(self.answers):
-            correct: bool
+    def get_expected_answers(self, _: str) -> []:
+        answer_type = self.token.get_instance().answer_type
+        expected_answers = []
+        for i, p in enumerate(self.get_pitch_pairs()):
             if answer_type == IntervalAnswerTypes.FULLTONES:
-                correct = Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() / 2 == float(self.answers[i].replace(',','.'))
+                expected_answers.append(str(Interval.from_diatonic_pitches(p, True).semitones() / 2))
             elif answer_type == IntervalAnswerTypes.SEMITONES:
-                correct = Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() == int(self.answers[i])
+                expected_answers.append(str(Interval.from_diatonic_pitches(p, True).semitones()))
             elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY:
                 raise NotImplementedError()
             elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY:
-                correct = Interval.from_diatonic_pitches(pitch_pairs[i], True).quantity == int(self.answers[i])
+                expected_answers.append(str(Interval.from_diatonic_pitches(p, True).quantity))
             else:
+                raise TypeError()
+        return expected_answers
+
+    def get_score_vector(self, lang: str) -> []:
+        pitch_pairs = self.get_pitch_pairs()
+        answer_type = self.token.get_instance().answer_type
+        correct_vec = []
+        for i, a in enumerate(self.answers):
+            if answer_type == IntervalAnswerTypes.FULLTONES:
+                correct_vec.append(len(a) and Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() / 2 == float(a))
+            elif answer_type == IntervalAnswerTypes.SEMITONES:
+                correct_vec.append(len(a) and Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() == float(a))
+            elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY_QUALITY:
                 raise NotImplementedError()
-            num_correct += int(correct)
-        return num_correct
+            elif answer_type == IntervalAnswerTypes.INTERVAL_QUANTITY:
+                correct_vec.append(len(a) and Interval.from_diatonic_pitches(pitch_pairs[i], True).quantity == int(a))
+            else:
+                raise TypeError()
+        return correct_vec
 
 class DiatonicPitch:
     pitch: int # 0 is sub-contra octave
@@ -415,7 +465,7 @@ class Interval:
         semitones = 0
         absQuantity = ((abs(self.quantity) - 1) % 7) + 1
 
-        # Major and perfect intervals are default
+        # Use Major and Perfect intervals as a base.
         # TODO: Rewrite using match statement introduced in Python 3.10
         if absQuantity == Interval.PRIME:
             semitones = 0
@@ -432,22 +482,20 @@ class Interval:
         elif absQuantity == Interval.SEVENTH:
             semitones = 11
 
-        # Minor or diminished / augmented.
-        # TODO: Rewrite using match statement introduced in Python 3.10
-        if self.quality == Interval.DIMINISHED:
-            if absQuantity == 1 or absQuantity == 3 or absQuantity == 6 or absQuantity == 7:
-                semitones -= 2
+        # Handle Diminished, Minor, and Augmented.
+        if self.quality <= Interval.DIMINISHED:
+            if absQuantity == Interval.FOURTH or absQuantity == Interval.FIFTH:
+                semitones += self.quality+1
             else:
-                semitones -= 1
+                # Diminished intervals of Second, Third, Sixth, Seventh are reduced for 2 semitones.
+                semitones += self.quality
         elif self.quality == Interval.MINOR:
             semitones -= 1
-        elif self.quality == Interval.MAJOR:
-            semitones += 1
+        elif self.quality >= Interval.AUGMENTED:
+            semitones += self.quality-1
 
         # Octaves.
         semitones += 12 * ((abs(self.quantity) - 1) // 7)
 
-        # Invert semitones for negative quantity
-        semitones = abs(semitones)
-
-        return semitones
+        # Always return positive value.
+        return abs(semitones)
