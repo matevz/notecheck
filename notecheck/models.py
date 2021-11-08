@@ -29,6 +29,13 @@ class Exercise(models.Model):
 
         raise TypeError()
 
+class ExerciseAdmin(admin.ModelAdmin):
+    list_display = ('title', 'token', 'created', 'num_questions', 'share')
+
+    @admin.display(description='Share')
+    def share(self, obj):
+        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+
 class NotePitchExercise(Exercise):
     AMBITUS = {
         Clefs.TREBLE: (25, 45),
@@ -39,12 +46,8 @@ class NotePitchExercise(Exercise):
     max_flats = models.PositiveSmallIntegerField(default=1)
 
 @admin.register(NotePitchExercise)
-class NotePitchExerciseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'token', 'created', 'num_questions', 'link')
-
-    @admin.display(description='Link')
-    def link(self, obj):
-        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+class NotePitchExerciseAdmin(ExerciseAdmin):
+    pass
 
 class IntervalAnswerTypes(models.TextChoices):
     INTERVAL_QUANTITY = 'interval_quantity', _('Interval quantity (e.g. 4)')
@@ -65,12 +68,8 @@ class IntervalExercise(Exercise):
     max_flats = models.PositiveSmallIntegerField(default=1)
 
 @admin.register(IntervalExercise)
-class IntervalExerciseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'token', 'created', 'num_questions', 'link')
-
-    @admin.display(description='Link')
-    def link(self, obj):
-        return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
+class IntervalExerciseAdmin(ExerciseAdmin):
+    pass
 
 class Submission(models.Model):
     token = models.ForeignKey(Exercise, on_delete=models.CASCADE)
@@ -111,7 +110,7 @@ class Submission(models.Model):
 @admin.register(Submission)
 @admin.display(ordering='created')
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created', 'duration', 'view_score')
+    list_display = ('name', 'created', 'duration', 'view_score', 'view')
     list_filter = ['token']
 
     def get_queryset(self, request):
@@ -128,6 +127,10 @@ class SubmissionAdmin(admin.ModelAdmin):
             return "{} / {}".format(obj.get_instance().get_score('sl'), obj.token.num_questions)
         else:
             return ""
+
+    @admin.display(description='View')
+    def view(self, obj):
+        return mark_safe("<a href={}>🔍</a>".format(reverse('submission', args=[obj.token.token, obj.pk])))
 
 class NotePitchSubmission(Submission):
     class Meta:

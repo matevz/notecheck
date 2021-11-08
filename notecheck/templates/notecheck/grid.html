@@ -59,7 +59,7 @@
             </fieldset>
             {% if not submission.duration %}
                 <input type="submit" value="{{ submit }}"/>
-            {% else %}
+            {% elif request.method == 'POST' %}
                 <a id="try_again" href="{% url 'submission' exercise.token %}">{{ try_again }}</a>
             {% endif %}
         </form>

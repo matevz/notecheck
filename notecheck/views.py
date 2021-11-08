@@ -34,7 +34,7 @@ def get_questions(submission_abstract: Submission, lang: str):
 
     return questions
 
-def submission(request, token):
+def submission(request, token, submission_id=None):
     template = get_template(token)
     ex = Exercise.objects.get(token=token)
     if not ex:
@@ -47,8 +47,13 @@ def submission(request, token):
     submission: Submission
 
     if request.method == 'POST':
+        # Post filled submission.
         submission = Submission.objects.get(id=request.POST['submission_id'])
+    elif request.method == 'GET' and submission_id:
+        # View-only.
+        submission = Submission.objects.get(id=submission_id)
     else:
+        # Create new submission.
         submission = Submission(
             token=ex,
             seed=int(time.time()),
@@ -57,6 +62,7 @@ def submission(request, token):
         submission.save()
 
     if request.method == 'POST' and not submission.duration:
+        # Only allow posting the submission for the first time by checking submission.duration field.
         answers = []
         for i in range(ex.num_questions):
             answer = request.POST['answer'+str(i)].strip().replace(',','.')
