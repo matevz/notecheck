@@ -36,12 +36,17 @@ class ExerciseAdmin(admin.ModelAdmin):
     def share(self, obj):
         return mark_safe("<a href={}>🔗</a>".format(reverse('submission', args=(obj.token,))))
 
+class NotePitchAnswerTypes(models.TextChoices):
+    NOTENAME_OCTAVE = 'notename_octave', _('Note pitch and octave (e.g. fis2)')
+    NOTENAME = 'notename', _('Note pitch only (e.g. fis)')
+
 class NotePitchExercise(Exercise):
     AMBITUS = {
         Clefs.TREBLE: (25, 45),
         Clefs.BASS: (12, 33),
     }
     clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
+    answer_type = models.CharField(max_length=50, choices=NotePitchAnswerTypes.choices, default=NotePitchAnswerTypes.NOTENAME_OCTAVE)
     max_sharps = models.PositiveSmallIntegerField(default=1)
     max_flats = models.PositiveSmallIntegerField(default=1)
 
@@ -166,10 +171,22 @@ class NotePitchSubmission(Submission):
         return pitches_str
 
     def get_score_vector(self, lang: str) -> []:
+        answer_type = self.token.get_instance().answer_type
         pitches = self.get_pitches()
         correct_vec = []
         for i, s in enumerate(self.answers):
-            correct = (i < len(pitches) and pitches[i]==DiatonicPitch.from_name(s, lang=lang))
+            if i>=len(pitches):
+                break
+
+            if answer_type == NotePitchAnswerTypes.NOTENAME_OCTAVE:
+                correct = (pitches[i]==DiatonicPitch.from_name(s, lang=lang))
+            elif answer_type == NotePitchAnswerTypes.NOTENAME:
+                expected_pitch = DiatonicPitch(pitch=pitches[i].pitch % 7, accs=pitches[i].accs)
+                answered_pitch = DiatonicPitch.from_name(s, lang=lang)
+                if answered_pitch:
+                    answered_pitch.pitch %= 7
+                correct = expected_pitch==answered_pitch
+
             correct_vec.append(correct)
         return correct_vec
 
@@ -227,6 +244,9 @@ class IntervalSubmission(Submission):
         answer_type = self.token.get_instance().answer_type
         correct_vec = []
         for i, a in enumerate(self.answers):
+            if i>=len(pitch_pairs):
+                break
+
             if answer_type == IntervalAnswerTypes.FULLTONES:
                 correct_vec.append(len(a) and Interval.from_diatonic_pitches(pitch_pairs[i], True).semitones() / 2 == float(a))
             elif answer_type == IntervalAnswerTypes.SEMITONES:
