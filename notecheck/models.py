@@ -106,7 +106,7 @@ class Submission(models.Model):
     def get_besttime(self, lang: str) -> timedelta:
         """return the best time among the submissions with full score"""
         best_time = timedelta.max
-        for s in Submission.objects(token=self.token).exclude(duration=timedelta(0)):
+        for s in Submission.objects.filter(token=self.token).exclude(duration=timedelta(0)):
             if s.get_score(lang=lang)==s.token.num_questions and s.duration < best_time:
                 best_time = s.duration
 
