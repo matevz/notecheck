@@ -3,6 +3,32 @@ from django.test import TestCase
 from .models import DiatonicPitch, Interval
 
 class DiatonicPitchTests(TestCase):
+    def test_add(self):
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.PERFECT, Interval.PRIME), DiatonicPitch(0,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.MAJOR, Interval.SECOND), DiatonicPitch(1,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.MAJOR, Interval.THIRD), DiatonicPitch(2,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.PERFECT, Interval.FOURTH), DiatonicPitch(3,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.PERFECT, Interval.FIFTH), DiatonicPitch(4,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.MAJOR, Interval.SIXTH), DiatonicPitch(5,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.MAJOR, Interval.SEVENTH), DiatonicPitch(6,0))
+        self.assertEquals(DiatonicPitch(0,0)+Interval(Interval.PERFECT, Interval.OCTAVE), DiatonicPitch(7,0))
+
+        self.assertEquals(DiatonicPitch(2,0)+Interval(Interval.MAJOR, Interval.SECOND), DiatonicPitch(3,1))
+        self.assertEquals(DiatonicPitch(6,0)+Interval(Interval.MAJOR, Interval.SECOND), DiatonicPitch(7,1))
+
+    def test_sub(self):
+#        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.PERFECT, Interval.PRIME), DiatonicPitch(7,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.MINOR, Interval.SECOND), DiatonicPitch(6,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.MINOR, Interval.THIRD), DiatonicPitch(5,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.PERFECT, Interval.FOURTH), DiatonicPitch(4,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.PERFECT, Interval.FIFTH), DiatonicPitch(3,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.MINOR, Interval.SIXTH), DiatonicPitch(2,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.MINOR, Interval.SEVENTH), DiatonicPitch(1,0))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.PERFECT, Interval.OCTAVE), DiatonicPitch(0,0))
+
+        self.assertEquals(DiatonicPitch(3,0)-Interval(Interval.MAJOR, Interval.SECOND), DiatonicPitch(2,-1))
+        self.assertEquals(DiatonicPitch(7,0)-Interval(Interval.MAJOR, Interval.SECOND), DiatonicPitch(6,-1))
+
     def test_pitch_to_name(self):
         self.assertEquals(DiatonicPitch(0,0).to_name(), 'C2')
         self.assertEquals(DiatonicPitch(1,0).to_name(), 'D2')
@@ -140,6 +166,21 @@ class IntervalTests(TestCase):
         self.assertEquals(Interval(Interval.MAJOR, Interval.SEVENTH).semitones(), 11)
 
         self.assertEquals(Interval.from_diatonic_pitches((DiatonicPitch(5, 1), DiatonicPitch(5,-1)), True).semitones(), 2)
+
+    def test_neg(self):
+        self.assertEquals( -Interval(Interval.PERFECT, Interval.PRIME), Interval(Interval.PERFECT, Interval.OCTAVE) )
+        self.assertEquals( -Interval(Interval.MAJOR, Interval.SECOND), Interval(Interval.MINOR, Interval.SEVENTH) )
+        self.assertEquals( -Interval(Interval.MAJOR, Interval.THIRD), Interval(Interval.MINOR, Interval.SIXTH) )
+        self.assertEquals( -Interval(Interval.PERFECT, Interval.FOURTH), Interval(Interval.PERFECT, Interval.FIFTH) )
+        self.assertEquals( -Interval(Interval.PERFECT, Interval.FIFTH), Interval(Interval.PERFECT, Interval.FOURTH) )
+        self.assertEquals( -Interval(Interval.MAJOR, Interval.SIXTH), Interval(Interval.MINOR, Interval.THIRD) )
+        self.assertEquals( -Interval(Interval.MAJOR, Interval.SEVENTH), Interval(Interval.MINOR, Interval.SECOND) )
+        self.assertEquals( -Interval(Interval.PERFECT, Interval.OCTAVE), Interval(Interval.PERFECT, Interval.PRIME) )
+
+        self.assertEquals( -Interval(Interval.AUGMENTED, Interval.PRIME), Interval(Interval.DIMINISHED, Interval.OCTAVE) )
+        self.assertEquals( -Interval(Interval.AUGMENTED, Interval.FOURTH), Interval(Interval.DIMINISHED, Interval.FIFTH) )
+        self.assertEquals( -Interval(Interval.AUGMENTED, Interval.SECOND), Interval(Interval.DIMINISHED, Interval.SEVENTH) )
+        self.assertEquals( -Interval(Interval.AUGMENTED, Interval.OCTAVE), Interval(Interval.DIMINISHED, Interval.PRIME) )
 
     def test_to_name(self):
         self.assertEquals(Interval(Interval.PERFECT, Interval.PRIME).to_name(lang='en'), 'p1')

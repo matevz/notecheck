@@ -1,3 +1,4 @@
+import math
 from datetime import timedelta
 import random
 import re
@@ -75,6 +76,26 @@ class IntervalExercise(Exercise):
 
 @admin.register(IntervalExercise)
 class IntervalExerciseAdmin(ExerciseAdmin):
+    pass
+
+class ScaleGender(models.TextChoices):
+    MAJOR = 'major', _('Major')
+    MINOR = 'minor', _('Minor')
+
+class ScaleShape(models.TextChoices):
+    NATURAL = 'natural', _('Natural')
+    HARMONIC = 'harmonic', _('Harmonic')
+    MELODIC = 'melodic', _('Melodic')
+
+class ScaleExercise(Exercise):
+    clef = models.CharField(max_length=10, choices=Clefs.choices, default=Clefs.TREBLE)
+    scale_gender = models.CharField(max_length=50, choices=ScaleGender.choices, default=ScaleGender.MAJOR)
+    scale_shape = models.CharField(max_length=50, choices=ScaleShape.choices, default=ScaleShape.NATURAL)
+    max_sharps = models.PositiveSmallIntegerField(default=7)
+    max_flats = models.PositiveSmallIntegerField(default=7)
+
+@admin.register(ScaleExercise)
+class ScaleExerciseAdmin(ExerciseAdmin):
     pass
 
 class Submission(models.Model):
@@ -260,6 +281,20 @@ class IntervalSubmission(Submission):
                 raise TypeError()
         return correct_vec
 
+class ScaleSubmission(Submission):
+    class Meta:
+        proxy = True
+
+    def get_scales(self) -> []:
+        """return scales generated from the seed"""
+        pass
+
+    def get_expected_answers(self, lang: str) -> []:
+        pass
+
+    def get_score_vector(self, lang: str) -> []:
+        pass
+
 class DiatonicPitch:
     pitch: int # 0 is sub-contra octave
     accs: int # 1 sharp, -1 flat
@@ -275,6 +310,73 @@ class DiatonicPitch:
         if other is None:
             return False
         return self.pitch == other.pitch and self.accs == other.accs
+
+    def __add__(self, i: 'Interval') -> 'DiatonicPitch':
+        dp = DiatonicPitch(self.pitch, self.accs)
+
+        # Only use positive intervals in up direction. If interval is negative, inverse it.
+        if (i.quantity < 0):
+            if (i.quantity != -1):
+                # First lower the pitch for i octaves + 1,
+                dp.pitch += math.floor((i.quantity+1)/7)*7
+            else:
+                # The exception is the negative prime (which is illegal in musical terms, but we still need to handle it).
+                dp.pitch -= 7
+            # Then inverse the interval (NB: negative prime becomes octave). Below, the positive interval is now added to the lowered note.
+            i = -i
+
+        dp.pitch += i.quantity - 1
+        deltaAccs = 0
+        relP = self.pitch % 7
+        relQnt = ((i.quantity - 1) % 7) + 1
+
+        if relQnt==Interval.PRIME:
+            deltaAccs = 0
+        elif relQnt==Interval.SECOND:
+            if relP == 2 or relP == 6:
+                deltaAccs = 1
+            else:
+                deltaAccs = 0
+        elif relQnt==Interval.THIRD:
+            if relP == 0 or relP == 3 or relP == 4:
+                deltaAccs = 0
+            else:
+                deltaAccs = 1
+        elif relQnt==Interval.FOURTH:
+            if relP == 3:
+                deltaAccs = -1
+            else:
+                deltaAccs = 0
+        elif relQnt==Interval.FIFTH:
+            if relP == 6:
+                deltaAccs = 1
+            else:
+                deltaAccs = 0
+        elif relQnt==Interval.SIXTH:
+            if relP == 2 or relP == 5 or relP == 6:
+                deltaAccs = 1
+            else:
+                deltaAccs = 0
+        elif relQnt==Interval.SEVENTH:
+            if relP == 0 or relP == 3:
+                deltaAccs = 0
+            else:
+                deltaAccs = 1
+
+        if relQnt == 4 or relQnt == 5 or relQnt == 1:
+            if i.quality < 0:
+                dp.accs += deltaAccs + i.quality + 1
+            elif i.quality > 0:
+                dp.accs = deltaAccs + i.quality - 1
+            else:
+                dp.accs += deltaAccs
+        else:
+            if i.quality < 0:
+                dp.accs += deltaAccs + i.quality
+            elif i.quality > 0:
+                dp.accs += deltaAccs + i.quality - 1
+
+        return dp
 
     def to_name(self, lang: str = 'en') -> str:
         """converts pitch to note name. e.g. (0,0) -> C2, (9, 1) -> Eis1, (28, 0) -> c1"""
@@ -308,7 +410,10 @@ class DiatonicPitch:
 
         return name
 
-    def from_name(name: str, lang: str = 'en'):
+    def __sub__(self, i: 'Interval') -> 'DiatonicPitch':
+        return self.__add__(Interval(i.quality, -i.quantity))
+
+    def from_name(name: str, lang: str = 'en') -> 'DiatonicPitch':
         """converts note name to pitch. Returns None, if pitch is invalid"""
         if not name:
             return None
@@ -391,8 +496,12 @@ class Interval:
             return False
         return self.quantity == other.quantity and self.quality == other.quality
 
+    def __neg__(self):
+        """Inverse interval. e.g. Major second -> Minor seventh, Perfect fourth -> perfect fifth"""
+        return Interval(-self.quality, 8-(abs(self.quantity)-1) )
+
     @staticmethod
-    def from_diatonic_pitches( pitch_pair: (DiatonicPitch, DiatonicPitch), absolute: bool = True):
+    def from_diatonic_pitches( pitch_pair: (DiatonicPitch, DiatonicPitch), absolute: bool = True) -> 'Interval':
         """
         Construct an interval between given pitches.
 
@@ -559,7 +668,7 @@ class Interval:
 
         return name
 
-    def from_name(name: str, lang: str):
+    def from_name(name: str, lang: str) -> 'Interval':
         """converts human-readable interval to interval. Returns None, if interval is invalid"""
         if not name:
             return None
@@ -593,3 +702,45 @@ class Interval:
             quantity *= -1
 
         return Interval(quality, quantity)
+
+class Scale:
+    """Diatonic major/minor scale"""
+
+    gender: ScaleGender
+    shape: ScaleShape
+    accs: int # e.g. 0: C-major/a-minor, 1: G-major/e-minor, -1: F-major/d-minor etc.
+    interval_matrix: { # matrix of interval quality of all major/minor scales
+        (ScaleGender.MAJOR, ScaleShape.NATURAL): [Interval.MAJOR, Interval.MAJOR, Interval.MINOR, Interval.MAJOR,
+                                                  Interval.MAJOR, Interval.MAJOR, Interval.MINOR],
+        (ScaleGender.MAJOR, ScaleShape.HARMONIC): [Interval.MAJOR, Interval.MAJOR, Interval.MINOR, Interval.MAJOR,
+                                                  Interval.MINOR, Interval.AUGMENTED, Interval.MINOR],
+        (ScaleGender.MAJOR, ScaleShape.MELODIC): [Interval.MAJOR, Interval.MAJOR, Interval.MINOR, Interval.MAJOR,
+                                                   Interval.MINOR, Interval.MAJOR, Interval.MAJOR],
+        (ScaleGender.MINOR, ScaleShape.NATURAL): [Interval.MAJOR, Interval.MINOR, Interval.MAJOR, Interval.MAJOR,
+                                                  Interval.MINOR, Interval.MAJOR, Interval.MAJOR],
+        (ScaleGender.MINOR, ScaleShape.HARMONIC): [Interval.MAJOR, Interval.MINOR, Interval.MAJOR, Interval.MAJOR,
+                                                  Interval.MINOR, Interval.AUGMENTED, Interval.MINOR],
+        (ScaleGender.MINOR, ScaleShape.MELODIC): [Interval.MAJOR, Interval.MINOR, Interval.MAJOR, Interval.MAJOR,
+                                                   Interval.MAJOR, Interval.MAJOR, Interval.MINOR],
+    }
+
+    def __init__(self, gender: ScaleGender, shape: ScaleShape, accs: int):
+        self.gender = gender
+        self.shape = shape
+        self.accs = accs
+
+    def __repr__(self):
+        return "({}, {}, {})".format(self.gender, self.shape, self.accs)
+
+    def get_pitches(self) -> []:
+        init_pitch = DiatonicPitch(0,0)
+        for i in range(0, self.accs):
+            init_pitch += Interval(Interval.PERFECT, Interval.FIFTH)
+        for i in range(0, self.accs, -1):
+            init_pitch -= Interval(Interval.PERFECT, Interval.FIFTH)
+
+        pitches = [init_pitch]
+        for i in range(0,7):
+            pitches.append(pitches[-1] + Interval(self.interval_matrix[(self.gender, self.shape)][i]), Interval.SECOND)
+
+        return pitches
