@@ -47,7 +47,7 @@ def get_questions_answers(submission_abstract: Submission, lang: str) -> ([], []
                 pitch2=s[-1].to_lilypond()
             )
             s = generate_svg(lilysrc)
-            questions.append( {"svg": s, "answers": answers[i*8 : (i+1)*8], "title": "{gender} {shape}".format(gender=ex.gender, shape=ex.shape) } )
+            questions.append( {"svg": s, "answers": answers[i*8 : (i+1)*8], "title": "{gender} {shape}".format(gender=ScaleGender(ex.gender).label, shape=ScaleShape(ex.shape).label) } )
 
     return questions, answers
 

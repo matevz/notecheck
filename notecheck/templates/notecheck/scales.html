@@ -43,6 +43,7 @@
             <input type="hidden" value="{{ submission.id }}" name="submission_id" />
                 {% for q in questions %}
                     <div class="question row">
+                        <h3>{{ q.title }}</h3>
                         <span class="scale-image">{{ q.svg |safe }}</span>
                         <fieldset>
                             {% for a in q.answers %}
