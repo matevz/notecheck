@@ -44,40 +44,51 @@ fieldset {
     }
 }
 
-.question {
+.question.grid {
     float:left;
     display:block;
     width:220px;
     height:200px;
 }
 
-.question svg {
+.question.grid svg {
     width:200px;
     height:60px;
 }
 
-.question input {
+.question.grid input {
     display:block;
     width:50px;
     margin-left:85px;
 }
 
-.answer-wrong, .answer-correct {
-    margin-left:100px;
-    font-size:16px;
+.question.row {
+    display:block;
+    margin-bottom:40px;
 }
 
-.answer-wrong, .answer-correct {
-    cursor:default;
+.question.row svg {
+    width:960px;
+    height:150px;
 }
+
+.question.row input {
+    float:left;
+    width:50px;
+    margin-left:55px;
+}
+.question.row input:first-child {
+    margin-left:90px;
+}
+
 
 .answer-wrong {
-    color:red;
-}
+   background:rgb(252, 232, 232);
+ }
 
 .answer-correct {
-    color:green;
-}
+   background:rgb(232, 252, 232);
+ }
 
 #try_again,
 input[type=submit] {

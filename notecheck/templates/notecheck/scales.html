@@ -20,17 +20,17 @@
             {% endif %}
 
             <span class="blink">
-                {% if num_correct == questions|length %}
+                {% if num_correct == answers|length %}
                     🏆
                 {% elif top_10 %}
                     🏅
                 {% endif %}
             </span>
 
-            {{ num_correct }} / {{ questions|length }}
+            {{ num_correct }} / {{ answers|length }}
 
             <span class="blink">
-                {% if num_correct == questions|length %}
+                {% if num_correct == answers|length %}
                     🏆
                 {% elif top_10 %}
                     🏅
@@ -41,23 +41,26 @@
         <form action="{% url 'submission' exercise.token %}" method="POST">
             {% csrf_token %}
             <input type="hidden" value="{{ submission.id }}" name="submission_id" />
-            <fieldset>
                 {% for q in questions %}
-                    <div class="question grid">
-                        <span class="note-image">{{ q.svg |safe }}</span>
-                        <input type="text" name="answer{{ q.answers.0.index }}" value="{{ q.answers.0.answer }}" autocomplete="off"
-                               {% if submission.duration %}disabled{% endif %}
-                                {% if q.answers.0.answer %}
-                                    {% if q.answers.0.correct %}
-                                    class="answer-correct"
-                                    {% else %}
-                                    class="answer-wrong"
-                                    {% endif %}
-                                {% endif %}
-                        />
+                    <div class="question row">
+                        <h3>{{ q.title }}</h3>
+                        <span class="scale-image">{{ q.svg |safe }}</span>
+                        <fieldset>
+                            {% for a in q.answers %}
+                                <input type="text" name="answer{{ a.index }}" value="{{ a.answer }}" autocomplete="off"
+                                       {% if submission.duration %}disabled{% endif %}
+                                        {% if a.answer %}
+                                            {% if a.correct %}
+                                            class="answer-correct"
+                                            {% else %}
+                                            class="answer-wrong"
+                                            {% endif %}
+                                        {% endif %}
+                                       />
+                            {% endfor %}
+                        </fieldset>
                     </div>
                 {% endfor %}
-            </fieldset>
             {% if not submission.duration %}
                 <input type="submit" value="{{ submit }}"/>
             {% elif request.method == 'POST' %}
