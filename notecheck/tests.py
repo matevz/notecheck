@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from .models import DiatonicPitch, Interval
+from .models import DiatonicPitch, Interval, Scale, ScaleGender, ScaleShape
 
 class DiatonicPitchTests(TestCase):
     def test_add(self):
@@ -235,3 +235,8 @@ class IntervalTests(TestCase):
         self.assertEquals(Interval.from_name('-zvzv4', lang='sl'), Interval(Interval.AUGMENTED+1, -Interval.FOURTH))
         self.assertEquals(Interval.from_name('-zm5', lang='sl'), Interval(Interval.DIMINISHED, -Interval.FIFTH))
         self.assertEquals(Interval.from_name('-zmzm5', lang='sl'), Interval(Interval.DIMINISHED-1, -Interval.FIFTH))
+
+class ScaleTests(TestCase):
+    def test_scales(self):
+        self.assertEquals(Scale(ScaleGender.MAJOR, ScaleShape.NATURAL, 0).get_pitches(), [ DiatonicPitch(0,0), DiatonicPitch(1,0), DiatonicPitch(2,0), DiatonicPitch(3,0), DiatonicPitch(4,0), DiatonicPitch(5,0), DiatonicPitch(6,0), DiatonicPitch(7,0)])
+        self.assertEquals(Scale(ScaleGender.MINOR, ScaleShape.NATURAL, -1).get_pitches(), [ DiatonicPitch(1,0), DiatonicPitch(2,0), DiatonicPitch(3,0), DiatonicPitch(4,0), DiatonicPitch(5,0), DiatonicPitch(6,-1), DiatonicPitch(7,0), DiatonicPitch(8,0)])
