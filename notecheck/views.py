@@ -95,6 +95,7 @@ def submission(request, token, submission_id=None):
         submission.save()
 
     questions, answers = get_questions_answers(submission, settings.LANGUAGE_CODE)
+
     context = {
         'exercise': ex,
         'submission': submission,
