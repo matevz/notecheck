@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-11-25 12:51+0000\n"
+"POT-Creation-Date: 2021-11-26 09:29+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -27,49 +27,47 @@ msgstr "Violinski"
 msgid "Bass"
 msgstr "Basovski"
 
-#: notecheck/models.py:41
+#: notecheck/models.py:44
 msgid "Note pitch and octave (e.g. fis2)"
 msgstr "Višina note z oktavo (npr. fis2)"
 
-#: notecheck/models.py:42
+#: notecheck/models.py:45
 msgid "Note pitch only (e.g. fis)"
 msgstr "Samo višina note (e.g. fis)"
 
-#: notecheck/models.py:59
+#: notecheck/models.py:65
 msgid "Interval quantity (e.g. 4)"
 msgstr "Kvantiteta (npr. 4)"
 
-#: notecheck/models.py:60
-#, fuzzy
-#| msgid "Interval quantity and quality (e.g. p4)"
+#: notecheck/models.py:66
 msgid "Interval quality and quantity (e.g. p4)"
-msgstr "Kvaliteta in kvantiteta (npr. č4)"
+msgstr "Kvaliteta in kvantiteta intervala (npr. č4)"
 
-#: notecheck/models.py:61
+#: notecheck/models.py:67
 msgid "Fulltones and remaining semitone (e.g. 2.5)"
 msgstr "Celi toni in poltoni (npr. 2,5)"
 
-#: notecheck/models.py:62
+#: notecheck/models.py:68
 msgid "Semitones (e.g. 5)"
 msgstr "Poltoni (npr. 5)"
 
-#: notecheck/models.py:81
+#: notecheck/models.py:90
 msgid "Major"
 msgstr "Dur"
 
-#: notecheck/models.py:82
+#: notecheck/models.py:91
 msgid "Minor"
 msgstr "Mol"
 
-#: notecheck/models.py:85
+#: notecheck/models.py:94
 msgid "Natural"
 msgstr "Naravni"
 
-#: notecheck/models.py:86
+#: notecheck/models.py:95
 msgid "Harmonic"
 msgstr "Harmonični"
 
-#: notecheck/models.py:87
+#: notecheck/models.py:96
 msgid "Melodic"
 msgstr "Melodični"
 
@@ -1274,3 +1272,11 @@ msgstr ""
 #: venv/lib/python3.8/site-packages/django/views/templates/default_urlconf.html:249
 msgid "Connect, get help, or contribute"
 msgstr ""
+
+#~ msgid "Interval quantity"
+#~ msgstr "Kvantiteta intervala"
+
+#, fuzzy
+#~| msgid "Interval quantity and quality (e.g. p4)"
+#~ msgid "Interval quality and quantity"
+#~ msgstr "Kvaliteta in kvantiteta (npr. č4)"

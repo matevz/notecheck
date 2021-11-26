@@ -11,6 +11,7 @@
         <link rel="stylesheet" type="text/css" href="{% static 'notecheck/style.css' %}">
     </head>
     <body>
+        <h1>{{ exercise.get_title }}</h1>
         {% if submission.duration %}
         <div class="score" title="{{ duration }}">
             {% if besttime %}

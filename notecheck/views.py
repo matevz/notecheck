@@ -41,13 +41,13 @@ def get_questions_answers(submission_abstract: Submission, lang: str) -> ([], []
             questions.append( { "svg": s, "answers": [answers[i]] } )
     elif isinstance(submission, ScaleSubmission):
         for i, s in enumerate(submission.get_scales()):
-            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine s1 s1 s1 s1 s1 s1 {pitch2}1 }}".format(
+            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 {pitch2}1 }}".format(
                 clefname=ex.clef.lower(),
                 pitch1=s[0].to_lilypond(),
                 pitch2=s[-1].to_lilypond()
             )
             s = generate_svg(lilysrc)
-            questions.append( {"svg": s, "answers": answers[i*8 : (i+1)*8], "title": "{gender} {shape}".format(gender=ScaleGender(ex.gender).label, shape=ScaleShape(ex.shape).label) } )
+            questions.append( {"svg": s, "answers": answers[i*8 : (i+1)*8]} )
 
     return questions, answers
 
@@ -97,13 +97,13 @@ def submission(request, token, submission_id=None):
     questions, answers = get_questions_answers(submission, settings.LANGUAGE_CODE)
 
     context = {
-        'exercise': ex,
-        'submission': submission,
-        'questions': questions,
-        'answers': answers,
-        'num_correct': submission.get_score(lang=settings.LANGUAGE_CODE),
-        'top_10': submission.get_score(lang=settings.LANGUAGE_CODE)/len(answers) >= 0.9,
-        'besttime': submission.get_score(lang=settings.LANGUAGE_CODE)==len(answers) and submission.get_besttime(lang=settings.LANGUAGE_CODE)>=submission.duration,
-        'duration': '{m}:{s}'.format(m=int(submission.duration.total_seconds()//60), s=int(submission.duration.total_seconds()%60))
+        "exercise": ex,
+        "submission": submission,
+        "questions": questions,
+        "answers": answers,
+        "num_correct": submission.get_score(lang=settings.LANGUAGE_CODE),
+        "top_10": submission.get_score(lang=settings.LANGUAGE_CODE)/len(answers) >= 0.9,
+        "besttime": submission.get_score(lang=settings.LANGUAGE_CODE)==len(answers) and submission.get_besttime(lang=settings.LANGUAGE_CODE)>=submission.duration,
+        "duration": "{m}:{s}".format(m=int(submission.duration.total_seconds()//60), s=int(submission.duration.total_seconds()%60))
     }
     return HttpResponse(template.render(context, request))

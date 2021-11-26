@@ -31,6 +31,9 @@ class Exercise(models.Model):
 
         raise TypeError()
 
+    def get_title(self):
+        return ""
+
 class ExerciseAdmin(admin.ModelAdmin):
     list_display = ('title', 'token', 'created', 'num_questions', 'share')
 
@@ -51,6 +54,9 @@ class NotePitchExercise(Exercise):
     answer_type = models.CharField(max_length=50, choices=NotePitchAnswerTypes.choices, default=NotePitchAnswerTypes.NOTENAME_OCTAVE)
     max_sharps = models.PositiveSmallIntegerField(default=1)
     max_flats = models.PositiveSmallIntegerField(default=1)
+
+    def get_title(self):
+        return NotePitchAnswerTypes(self.answer_type).label
 
 @admin.register(NotePitchExercise)
 class NotePitchExerciseAdmin(ExerciseAdmin):
@@ -73,6 +79,9 @@ class IntervalExercise(Exercise):
     max_quantity = models.PositiveSmallIntegerField(default=8)
     max_sharps = models.PositiveSmallIntegerField(default=1)
     max_flats = models.PositiveSmallIntegerField(default=1)
+
+    def get_title(self):
+        return IntervalAnswerTypes(self.answer_type).label
 
 @admin.register(IntervalExercise)
 class IntervalExerciseAdmin(ExerciseAdmin):
@@ -98,6 +107,9 @@ class ScaleExercise(Exercise):
     shape = models.CharField(max_length=50, choices=ScaleShape.choices, default=ScaleShape.NATURAL)
     max_sharps = models.PositiveSmallIntegerField(default=7)
     max_flats = models.PositiveSmallIntegerField(default=7)
+
+    def get_title(self):
+        return "{gender} {shape}".format(gender=ScaleGender(self.gender).label, shape=ScaleShape(self.shape).label)
 
 @admin.register(ScaleExercise)
 class ScaleExerciseAdmin(ExerciseAdmin):

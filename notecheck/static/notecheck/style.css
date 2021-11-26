@@ -9,10 +9,13 @@ fieldset {
     border: none;
 }
 
-.score {
-    font-size:26px;
+body {
     text-align: center;
     margin:30px;
+}
+
+.score {
+    font-size:26px;
 }
 
 .blink {
@@ -48,18 +51,18 @@ fieldset {
     float:left;
     display:block;
     width:220px;
-    height:200px;
+    height:180px;
 }
 
 .question.grid svg {
     width:200px;
-    height:60px;
+    height:70px;
 }
 
 .question.grid input {
     display:block;
     width:50px;
-    margin-left:85px;
+    margin-left:90px;
 }
 
 .question.row {
@@ -69,16 +72,16 @@ fieldset {
 
 .question.row svg {
     width:960px;
-    height:150px;
+    height:100px;
 }
 
 .question.row input {
     float:left;
     width:50px;
-    margin-left:55px;
+    margin-left:67px;
 }
 .question.row input:first-child {
-    margin-left:90px;
+    margin-left:45px;
 }
 
 

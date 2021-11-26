@@ -11,6 +11,7 @@
         <link rel="stylesheet" type="text/css" href="{% static 'notecheck/style.css' %}">
     </head>
     <body>
+        <h1>{{ exercise.get_title }}</h1>
         {% if submission.duration %}
         <div class="score" title="{{ duration }}">
             {% if besttime %}
@@ -43,7 +44,6 @@
             <input type="hidden" value="{{ submission.id }}" name="submission_id" />
                 {% for q in questions %}
                     <div class="question row">
-                        <h3>{{ q.title }}</h3>
                         <span class="scale-image">{{ q.svg |safe }}</span>
                         <fieldset>
                             {% for a in q.answers %}
