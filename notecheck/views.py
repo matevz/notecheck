@@ -41,7 +41,7 @@ def get_questions_answers(submission_abstract: Submission, lang: str) -> ([], []
             questions.append( { "svg": s, "answers": [answers[i]] } )
     elif isinstance(submission, ScaleSubmission):
         for i, s in enumerate(submission.get_scales()):
-            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 {pitch2}1 }}".format(
+            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 {pitch2}1 }}".format(
                 clefname=ex.clef.lower(),
                 pitch1=s[0].to_lilypond(),
                 pitch2=s[-1].to_lilypond()

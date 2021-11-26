@@ -72,16 +72,16 @@ body {
 
 .question.row svg {
     width:960px;
-    height:100px;
+    height:95px;
 }
 
 .question.row input {
     float:left;
     width:50px;
-    margin-left:67px;
+    margin-left:69px;
 }
 .question.row input:first-child {
-    margin-left:45px;
+    margin-left:35px;
 }
 
 
