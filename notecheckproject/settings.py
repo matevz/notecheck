@@ -108,7 +108,7 @@ LOCALE_PATHS = [
     'locale'
 ]
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'CET'
 
 USE_I18N = True
 

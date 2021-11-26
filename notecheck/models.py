@@ -3,6 +3,7 @@ import random
 import re
 import uuid
 
+from django.conf import settings
 from django.contrib import admin
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -129,7 +130,7 @@ class SubmissionAdmin(admin.ModelAdmin):
     @admin.display(description='Score')
     def view_score(self, obj) -> str:
         if obj.duration:
-            return "{} / {}".format(obj.get_instance().get_score('sl'), obj.token.num_questions)
+            return "{} / {}".format(obj.get_instance().get_score(settings.LANGUAGE_CODE), obj.token.num_questions)
         else:
             return ""
 

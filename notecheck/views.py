@@ -1,6 +1,7 @@
 import time
 from datetime import datetime, timezone
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.template import loader
 
@@ -72,15 +73,15 @@ def submission(request, token, submission_id=None):
         submission.duration = datetime.now(timezone.utc)-submission.created
         submission.save()
 
-    questions = get_questions(submission, 'sl')
+    questions = get_questions(submission, settings.LANGUAGE_CODE)
 
     context = {
         'exercise': ex,
         'submission': submission,
         'questions': questions,
-        'num_correct': submission.get_score(lang='sl'),
-        'top_10': submission.get_score(lang='sl')/ex.num_questions >= 0.9,
-        'besttime': submission.get_score(lang='sl')==ex.num_questions and submission.get_besttime(lang='sl')>=submission.duration,
+        'num_correct': submission.get_score(lang=settings.LANGUAGE_CODE),
+        'top_10': submission.get_score(lang=settings.LANGUAGE_CODE)/ex.num_questions >= 0.9,
+        'besttime': submission.get_score(lang=settings.LANGUAGE_CODE)==ex.num_questions and submission.get_besttime(lang=settings.LANGUAGE_CODE)>=submission.duration,
         'duration': '{m}:{s}'.format(m=int(submission.duration.total_seconds()//60), s=int(submission.duration.total_seconds()%60))
     }
     return HttpResponse(template.render(context, request))
