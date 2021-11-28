@@ -12,6 +12,11 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+# Two same questions one after another should not appear in any of the exercises.
+# If this cannot be satisfied, give up after UNIQUE_QUESTION_RETRIES to avoid
+# infinite loop.
+UNIQUE_QUESTION_RETRIES = 5
+
 class Clefs(models.TextChoices):
     TREBLE = 'treble', _('Treble')
     BASS = 'bass', _('Bass')
@@ -193,12 +198,14 @@ class NotePitchSubmission(Submission):
         oldPitch: DiatonicPitch = None
         for i in range(ex.num_questions):
             # Avoid the same pitch one right after another.
-            while oldPitch == pitch:
+            num_retries = 0
+            while oldPitch == pitch and num_retries < UNIQUE_QUESTION_RETRIES:
                 accs = 0
                 if ex.max_sharps != 0 or ex.max_flats != 0:
                     accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
 
                 pitch = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), accs)
+                num_retries += 1
 
             notes.append( pitch )
             oldPitch = pitch
@@ -246,7 +253,8 @@ class IntervalSubmission(Submission):
         old_pitch_pair: (DiatonicPitch, DiatonicPitch) = None
         for i in range(ex.num_questions):
             # Avoid the same note pairs one after another.
-            while old_pitch_pair == pitch_pair:
+            num_retries = 0
+            while old_pitch_pair == pitch_pair and num_retries < UNIQUE_QUESTION_RETRIES:
                 pitch1 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
                 pitch2 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
 
@@ -258,6 +266,8 @@ class IntervalSubmission(Submission):
                 interval_candidate = Interval.from_diatonic_pitches((pitch1, pitch2), False)
                 if (ex.max_quantity == 0 or abs(interval_candidate.quantity) <= ex.max_quantity) and (ex.direction == 0 or interval_candidate.quantity / abs(interval_candidate.quantity) == ex.direction):
                     pitch_pair = (pitch1, pitch2)
+
+                num_retries += 1
 
             pitch_pairs.append( pitch_pair )
             old_pitch_pair = pitch_pair
@@ -315,7 +325,8 @@ class ScaleSubmission(Submission):
         old_scale: [DiatonicPitch] = None
         for i in range(ex.num_questions):
             # Avoid the same note pairs one after another.
-            while old_scale == scale:
+            num_retries = 0
+            while old_scale == scale and num_retries < UNIQUE_QUESTION_RETRIES:
                 scale = []
                 accs = rnd.randrange(-ex.max_flats, ex.max_sharps + 1)
                 s = Scale( ex.gender, ex.shape, accs )
@@ -334,6 +345,8 @@ class ScaleSubmission(Submission):
 
                 for p in pitches:
                     scale.append( DiatonicPitch( p.pitch+offset, p.accs ) )
+
+                num_retries += 1
 
             scales.append(scale)
             old_scale = scale[:]
