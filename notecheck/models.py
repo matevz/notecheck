@@ -134,7 +134,7 @@ class Submission(models.Model):
 
     def get_expected_answers(self, lang: str) -> []:
         """return expected answers used as a helper in admin pages"""
-        raise NotImplementedError()
+        return self.get_instance().get_expected_answers(lang=lang)
 
     def get_score(self, lang: str) -> int:
         """return number of correct answers"""
@@ -142,7 +142,7 @@ class Submission(models.Model):
 
     def get_score_vector(self, lang: str) -> []:
         """return binary array of correct/incorrect answers"""
-        raise NotImplementedError()
+        return self.get_instance().get_score_vector(lang=lang)
 
     def get_besttime(self, lang: str) -> timedelta:
         """return the best time among the submissions with full score"""
@@ -170,7 +170,7 @@ class SubmissionAdmin(admin.ModelAdmin):
     @admin.display(description='Score')
     def view_score(self, obj) -> str:
         if obj.duration:
-            return "{} / {}".format(obj.get_instance().get_score(settings.LANGUAGE_CODE), obj.token.num_questions)
+            return "{} / {}".format(obj.get_instance().get_score(lang=settings.LANGUAGE_CODE), len(obj.get_expected_answers(lang=settings.LANGUAGE_CODE)))
         else:
             return ""
 
