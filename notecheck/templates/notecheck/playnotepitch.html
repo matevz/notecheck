@@ -1,0 +1,57 @@
+{% load i18n %}
+{% load static %}
+
+{% translate "Submit" as submit %}
+{% translate "Try again" as try_again %}
+
+<html>
+    <head>
+        <title>{{ submission.token.title }} - NoteCheck</title>
+        <link rel="bookmark icon" type="image/png" href="{% static 'notecheck/favicon.ico' %}"/>
+        <link rel="stylesheet" type="text/css" href="{% static 'notecheck/style.css' %}">
+        <script src="https://unpkg.com/aubiojs"></script>
+        <script lang="javascript">
+
+    aubio().then(function(aubio) {
+      recordBtn.addEventListener("click", function (event) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+            const bufferSize = 1 << 12;
+            let audioContext = new (AudioContext || webkitAudioContext)();
+            let scriptProcessor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+            audioContext.createMediaStreamSource(stream).connect(scriptProcessor);
+            // Needed in Chrome.
+            scriptProcessor.connect(audioContext.destination);
+
+            let pitchDetector = new aubio.Pitch(
+              'default',
+              scriptProcessor.bufferSize,
+              scriptProcessor.bufferSize / 8,
+              audioContext.sampleRate
+            );
+            scriptProcessor.addEventListener("audioprocess", function (event) {
+                const data = event.inputBuffer.getChannelData(0);
+                const frequency = pitchDetector.do(data);
+
+                if (frequency) {
+                    midiPitch = Math.round(69 + 12 * Math.log2(frequency/440.0));
+                    mp.innerHTML = midiPitch;
+                    freq.innerHTML = frequency + " Hz";
+                } else {
+                    mp.innerHTML = "&nbsp;";
+                    freq.innerHTML = "&nbsp;";
+                }
+            });
+        })
+        .catch(function(error) {
+          alert(error.name + ': ' + error.message)
+        })
+      });
+    });
+        </script>
+    </head>
+    <body>
+      <button id="recordBtn">🎙</button>
+      <div id="mp">MIDI pitch</div>
+      <div id="freq">freq</div>
+    </body>
+</html>

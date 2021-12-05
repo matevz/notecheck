@@ -51,6 +51,10 @@ def get_questions_answers(submission_abstract: Submission, lang: str) -> ([], []
 
     return questions, answers
 
+def playnotepitch(request):
+    template = loader.get_template('notecheck/playnotepitch.html')
+    return HttpResponse(template.render({}, request))
+
 def submission(request, token, submission_id=None):
     template = get_template(token)
     ex = Exercise.objects.get(token=token)
