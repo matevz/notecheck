@@ -495,11 +495,9 @@ class DiatonicPitch:
         elif pitch == 5: # H
             pitch = 6
 
-        accs = 0
-        if name.count('is'): # sharps
-            accs = name.count('is')
-        elif name.count('s'): # flats
-            accs = -name.count('s')
+        accs = name.upper().count('IS') # sharps
+        if accs == 0:
+            accs -= name.upper().count('S') # flats
 
         if lang in ['sl', 'de']:
             # In Slovenian (and German) language B also means Hes, and BB means Heses

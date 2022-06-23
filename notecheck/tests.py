@@ -64,9 +64,13 @@ class DiatonicPitchTests(TestCase):
         self.assertEquals(DiatonicPitch.from_name('c4'), DiatonicPitch(49,0))
         self.assertEquals(DiatonicPitch.from_name('c5'), DiatonicPitch(56,0))
         self.assertEquals(DiatonicPitch.from_name('Eis1'), DiatonicPitch(9,1))
+        self.assertEquals(DiatonicPitch.from_name('EIS1'), DiatonicPitch(9,1))
+        self.assertEquals(DiatonicPitch.from_name('Eisis1'), DiatonicPitch(9,2))
         self.assertEquals(DiatonicPitch.from_name('a'), DiatonicPitch(26,0))
         self.assertEquals(DiatonicPitch.from_name('b'), DiatonicPitch(27,0))
         self.assertEquals(DiatonicPitch.from_name('ces1'), DiatonicPitch(28,-1))
+        self.assertEquals(DiatonicPitch.from_name('cES1'), DiatonicPitch(28,-1))
+        self.assertEquals(DiatonicPitch.from_name('ceses1'), DiatonicPitch(28,-2))
         self.assertEquals(DiatonicPitch.from_name('d2'), DiatonicPitch(36,0))
 
     def test_name_to_pitch_locale(self):
