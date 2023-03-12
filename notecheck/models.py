@@ -254,9 +254,11 @@ class IntervalSubmission(Submission):
                     pitch1.accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
                     pitch2.accs = rnd.randrange(-ex.max_flats, ex.max_sharps+1)
 
-                # Check other exercise constrains.
+                # Check other exercise constraints.
                 interval_candidate = Interval.from_diatonic_pitches((pitch1, pitch2), False)
-                if (ex.max_quantity == 0 or abs(interval_candidate.quantity) <= ex.max_quantity) and (ex.direction == 0 or interval_candidate.quantity / abs(interval_candidate.quantity) == ex.direction):
+                if (ex.max_quantity == 0 or abs(interval_candidate.quantity) <= ex.max_quantity) and \
+                   (ex.direction == 0 or interval_candidate.quantity / abs(interval_candidate.quantity) == ex.direction) and \
+                   interval_candidate.quality >= -2 and interval_candidate.quality <= 2:
                     pitch_pair = (pitch1, pitch2)
 
             pitch_pairs.append( pitch_pair )
