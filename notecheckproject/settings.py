@@ -27,6 +27,8 @@ DEBUG = 'DEBUG' in env
 
 ALLOWED_HOSTS = ['127.0.0.1','localhost','note.jekovec.net']
 
+CSRF_TRUSTED_ORIGINS = ['https://note.jekovec.net']
+
 # Application definition
 
 INSTALLED_APPS = [
