@@ -110,6 +110,10 @@ input[type=submit] {
     background:rgb(245, 252, 242);
     text-align: center;
     text-decoration: none;
+    border: 1px solid;
+    cursor: pointer;
+    font-size: 16px;
+    font-family: sans-serif;
 }
 
 #try_again {
