@@ -15,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 class Clefs(models.TextChoices):
     TREBLE = 'treble', _('Treble')
     BASS = 'bass', _('Bass')
+    TREBLE_BASS = 'treblebass', _('Treble and bass')
 
 class Exercise(models.Model):
     token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -132,6 +133,13 @@ class Submission(models.Model):
             return ScaleSubmission.objects.get(pk=self.pk)
         raise TypeError()
 
+    def get_clef(self, ex: NotePitchExercise, i: int) -> Clefs:
+        """return randomized clef, if Treble and Bass is selected"""
+        clef = ex.clef
+        if clef == Clefs.TREBLE_BASS:
+            clef = Clefs.TREBLE if random.Random(self.seed+i).randrange(0,2) else Clefs.BASS
+        return clef
+
     def get_expected_answers(self, lang: str) -> []:
         """return expected answers used as a helper in admin pages"""
         return self.get_instance().get_expected_answers(lang=lang)
@@ -185,13 +193,15 @@ class NotePitchSubmission(Submission):
     def get_pitches(self) -> []:
         """return pitch instances generated from the seed"""
         ex = NotePitchExercise.objects.get(token=self.token.token)
-        ambitus = NotePitchExercise.AMBITUS[ex.clef]
 
         rnd = random.Random(self.seed)
         notes = []
         pitch: DiatonicPitch = None
         oldPitch: DiatonicPitch = None
         for i in range(ex.num_questions):
+            clef = self.get_clef(ex, i)
+            ambitus = NotePitchExercise.AMBITUS[clef]
+
             # Avoid the same pitch one right after another.
             while oldPitch == pitch:
                 accs = 0
@@ -239,12 +249,14 @@ class IntervalSubmission(Submission):
         """return pitch pairs generated from the seed"""
         ex = self.token.get_instance()
         rnd = random.Random(self.seed)
-        ambitus = IntervalExercise.AMBITUS[ex.clef]
 
         pitch_pairs = []
         pitch_pair: (DiatonicPitch, DiatonicPitch) = None
         old_pitch_pair: (DiatonicPitch, DiatonicPitch) = None
         for i in range(ex.num_questions):
+            clef = self.get_clef(ex, i)
+            ambitus = IntervalExercise.AMBITUS[clef]
+
             # Avoid the same note pairs one after another.
             while old_pitch_pair == pitch_pair:
                 pitch1 = DiatonicPitch(rnd.randrange(ambitus[0],ambitus[1]), 0)
@@ -310,12 +322,13 @@ class ScaleSubmission(Submission):
         """return scales generated from the seed"""
         ex = self.token.get_instance()
         rnd = random.Random(self.seed)
-        ambitus = ScaleExercise.AMBITUS[ex.clef]
 
         scales: [ [DiatonicPitch] ] = []
         scale: [DiatonicPitch] = None
         old_scale: [DiatonicPitch] = None
         for i in range(ex.num_questions):
+            clef = self.get_clef(ex, i)
+            ambitus = ScaleExercise.AMBITUS[clef]
             # Avoid the same note pairs one after another.
             while old_scale == scale:
                 scale = []

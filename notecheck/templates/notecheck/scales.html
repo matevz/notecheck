@@ -44,7 +44,9 @@
             <input type="hidden" value="{{ submission.id }}" name="submission_id" />
                 {% for q in questions %}
                     <div class="question row">
-                        <span class="scale-image">{{ q.svg |safe }}</span>
+                        <div class="scale-image-holder">
+                            <span class="scale-image">{{ q.svg |safe }}</span>
+                        </div>
                         <fieldset>
                             {% for a in q.answers %}
                                 <input type="text" name="answer{{ a.index }}" value="{{ a.answer }}" autocomplete="off"

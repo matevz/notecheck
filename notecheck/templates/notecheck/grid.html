@@ -45,7 +45,9 @@
             <fieldset>
                 {% for q in questions %}
                     <div class="question grid">
-                        <span class="note-image">{{ q.svg |safe }}</span>
+                        <div class="note-image-holder">
+                            <span class="note-image">{{ q.svg |safe }}</span>
+                        </div>
                         <input type="text" name="answer{{ q.answers.0.index }}" value="{{ q.answers.0.answer }}" autocomplete="off"
                                {% if submission.duration %}disabled{% endif %}
                                 {% if q.answers.0.answer %}

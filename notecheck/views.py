@@ -31,18 +31,25 @@ def get_questions_answers(submission_abstract: Submission, lang: str) -> ([], []
 
     if isinstance(submission, NotePitchSubmission):
         for i, p in enumerate(submission.get_pitches()):
-            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch}1 }}".format(clefname=ex.clef.lower(), pitch=p.to_lilypond())
+            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch}1 }}".format(
+                clefname=submission.get_clef(ex, i).lower(),
+                pitch=p.to_lilypond()
+            )
             s = generate_svg(lilysrc)
             questions.append( { "svg": s, "answers": [answers[i]] } )
     elif isinstance(submission, IntervalSubmission):
         for i, p in enumerate(submission.get_pitch_pairs()):
-            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine {pitch2}1 }}".format(clefname=ex.clef.lower(), pitch1=p[0].to_lilypond(), pitch2=p[1].to_lilypond())
+            lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine {pitch2}1 }}".format(
+                clefname=submission.get_clef(ex, i).lower(),
+                pitch1=p[0].to_lilypond(),
+                pitch2=p[1].to_lilypond()
+            )
             s = generate_svg(lilysrc)
             questions.append( { "svg": s, "answers": [answers[i]] } )
     elif isinstance(submission, ScaleSubmission):
         for i, s in enumerate(submission.get_scales()):
             lilysrc = "{{ \\omit Score.TimeSignature \\clef {clefname} {pitch1}1 \\omit Score.BarLine s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 s1 {pitch2}1 }}".format(
-                clefname=ex.clef.lower(),
+                clefname=submission.get_clef(ex, i).lower(),
                 pitch1=s[0].to_lilypond(),
                 pitch2=s[-1].to_lilypond()
             )
