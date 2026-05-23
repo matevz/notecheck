@@ -16,17 +16,18 @@ Currently supported exercises:
 
 ## Installation and Quickstart
 
-NoteCheck is a simple django app. It was tested with Django 3.2.6 and Python 3.8
-on Ubuntu 20.04.
+NoteCheck is a simple django app. It was tested with Django 3.2.6, Python 3.12, and uv
+on Ubuntu 24.04.
 
 To setup the app locally:
 
 1. `git clone https://github.com/matevz/notecheck.git; cd notecheck`
+2. `uv sync`
 2. `export SECRET_KEY=some_secret_key`
-3. `./manage.py migrate`
-4. `./manage.py compilemessages` # Localization.
-5. `./manage.py createsuperuser` # Add at least one admin user.
-6. `DEBUG=1 ./manage.py runserver`
+3. `uv run manage.py migrate`
+4. `uv run manage.py compilemessages` # Localization.
+5. `uv run manage.py createsuperuser` # Add at least one admin user.
+6. `DEBUG=1 uv run manage.py runserver`
 7. Teacher visits `http://localhost:8000/admin`, logs in and adds an exercise.
    Shares the public exercise link (`http://localhost:8000/<exercise token>`) to
    the student, e.g. `http://localhost:8000/6d9b478d-e646-4614-8a95-9b73ece071a0`.
